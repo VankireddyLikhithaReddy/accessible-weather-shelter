@@ -1,9 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
-// ----------------------
-// Current Weather Hook
-// ----------------------
+
 export function useCurrentWeather(location) {
   return useQuery({
     queryKey: ["/api/weather/current", location],
@@ -20,9 +18,7 @@ export function useCurrentWeather(location) {
   });
 }
 
-// ----------------------
-// Forecast Hook
-// ----------------------
+
 export function useWeatherForecast(location, days = 3) {
   return useQuery({
     queryKey: ["/api/weather/forecast", location, days],
@@ -39,9 +35,7 @@ export function useWeatherForecast(location, days = 3) {
   });
 }
 
-// ----------------------
-// Alerts Hook with Audio + Visual Banner
-// ----------------------
+
 export function useWeatherAlerts(location) {
   const lastAlertRef = useRef(null);
   const [visibleAlert, setVisibleAlert] = useState(null);
@@ -60,7 +54,7 @@ export function useWeatherAlerts(location) {
       return data;
     },
     enabled: !!location,
-    refetchInterval: 60000, // refetch every 1 minute
+    refetchInterval: 60000, 
   });
 
   useEffect(() => {
@@ -71,26 +65,40 @@ export function useWeatherAlerts(location) {
       if (lastAlertRef.current !== alertId) {
         lastAlertRef.current = alertId;
 
-        // Show banner for low-vision users
         setVisibleAlert({
           headline: latestAlert.headline,
           description: latestAlert.description,
           severity: latestAlert.severity,
         });
 
-        // Announce via TTS for blind users
-        const message = `⚠️ Severe weather alert for ${location}. ${latestAlert.headline}. ${latestAlert.description}. Please stay safe.`;
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(message);
-        utterance.rate = 1;
-        utterance.pitch = 1;
-        utterance.volume = 1;
-        utterance.lang = "en-US";
-        window.speechSynthesis.speak(utterance);
+   // Announce via TTS for blind users
+const message = `⚠️ Severe weather alert for ${location}. ${latestAlert.headline}. ${latestAlert.description}. Please stay safe.`;
+window.speechSynthesis.cancel();
+const utterance = new SpeechSynthesisUtterance(message);
+utterance.rate = 1;
+utterance.pitch = 1;
+utterance.volume = 1;
+utterance.lang = "en-US";
 
-        console.log("🔊 Announcing weather alert:", message);
+// Try selecting a male voice dynamically
+const voices = window.speechSynthesis.getVoices();
+const mVoice =
+  voices.find(v =>
+    v.lang.startsWith("en") &&
+    /male|David|Guy|Matthew|Mike|John|Brian/i.test(v.name)
+  ) || voices.find(v => v.lang.startsWith("en"));
 
-        // Auto-hide after 60 seconds
+if (mVoice) {
+  utterance.voice = mVoice;
+  console.log(`🎙 Using voice: ${mVoice.name}`);
+} else {
+}
+
+// Speak the alert
+window.speechSynthesis.speak(utterance);
+console.log("🔊 Announcing weather alert:", message);
+
+
         setTimeout(() => setVisibleAlert(null), 60000);
       }
     }
@@ -99,16 +107,13 @@ export function useWeatherAlerts(location) {
   return { ...query, visibleAlert };
 }
 
-// ----------------------
-// Inline Alert Banner Component
-// ----------------------
-export function WeatherAlertBanner({ alert }) {
+export function WeatherAlertBanner({ alert, onDismiss }) {
   if (!alert) return null;
 
   const severityColors = {
-    severe: "#ff0000", // bright red
-    extreme: "#8b0000", // dark red
-    moderate: "#ff9900", // orange
+    severe: "#ff0000",
+    extreme: "#8b0000",
+    moderate: "#ff9900",
   };
 
   const bgColor = severityColors[alert.severity] || "#ffcc00";
@@ -126,6 +131,7 @@ export function WeatherAlertBanner({ alert }) {
         margin: "16px 0",
         boxShadow: "0px 0px 12px rgba(0,0,0,0.6)",
         animation: "alertPulse 2s infinite",
+        position: "relative",
       }}
       aria-live="assertive"
     >
@@ -133,6 +139,26 @@ export function WeatherAlertBanner({ alert }) {
       <span style={{ fontSize: "1.3rem", fontWeight: "600" }}>
         {alert.description}
       </span>
+
+      <button
+        onClick={() => {
+          window.speechSynthesis.cancel();
+          onDismiss?.();
+        }}
+        style={{
+          position: "absolute",
+          top: "8px",
+          right: "12px",
+          background: "transparent",
+          border: "none",
+          color: "#fff",
+          fontSize: "1.5rem",
+          cursor: "pointer",
+        }}
+        aria-label="Dismiss alert"
+      >
+        ×
+      </button>
 
       <style>
         {`
