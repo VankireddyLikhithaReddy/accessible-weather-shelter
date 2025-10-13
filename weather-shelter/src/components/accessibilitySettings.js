@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Settings } from "lucide-react";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -12,11 +13,20 @@ export function AccessibilitySettings({
   onVoiceChange,
 }) {
   const [show, setShow] = useState(false);
+  const [fontSize, setFontSize] = useState(
+    parseInt(localStorage.getItem("fontSize") || 16)
+  );
 
   // Lock body scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = show ? "hidden" : "auto";
   }, [show]);
+
+  // Apply font size globally
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${fontSize}px`;
+    localStorage.setItem("fontSize", fontSize);
+  }, [fontSize]);
 
   return (
     <>
@@ -48,7 +58,6 @@ export function AccessibilitySettings({
             zIndex: 1050,
           }}
           onClick={(e) => {
-            // Close only when clicking the backdrop (outside modal content)
             if (e.target === e.currentTarget) setShow(false);
           }}
         >
@@ -132,6 +141,27 @@ export function AccessibilitySettings({
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* 🆕 Font Size Adjustment */}
+                <div className="mb-4">
+                  <label htmlFor="fontSizeRange" className="form-label">
+                    Font Size: {fontSize}px
+                  </label>
+                  <input
+                    type="range"
+                    className="form-range"
+                    min="12"
+                    max="24"
+                    step="1"
+                    id="fontSizeRange"
+                    value={fontSize}
+                    onChange={(e) => setFontSize(parseInt(e.target.value))}
+                    data-testid="slider-font-size"
+                  />
+                  <small className="form-text text-muted">
+                    Adjust text size for better readability
+                  </small>
                 </div>
               </div>
 

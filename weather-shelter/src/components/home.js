@@ -6,7 +6,7 @@ import { SevereWeatherAlert } from "./severeWeatherAlert";
 import { TTSControls } from "./TTSControls";
 import { AccessibilitySettings } from "./accessibilitySettings";
 import { LocationInput } from "./locationInput";
-
+import Feedback from "./feedback";
 //import { Button } from "@/components/ui/button";
 import { MapPin, Loader2 } from "lucide-react";
 import { useCurrentWeather, useWeatherForecast, useWeatherAlerts, WeatherAlertBanner } from "./hooks/useWeather";
@@ -252,6 +252,10 @@ useEffect(() => {
           >
             Find Shelters Near Me
           </button>
+        </section>
+
+        <section aria-label="User feedback">
+          <Feedback />
         </section>
       </main>
 
