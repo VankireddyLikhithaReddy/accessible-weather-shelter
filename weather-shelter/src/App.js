@@ -10,6 +10,18 @@ import { Toaster } from './components/ui/toaster';
 import { Switch, Route } from "wouter";
 import Home from './components/home';
 import NotFound from './components/notFound';
+import { useWeatherAlerts, WeatherAlertBanner } from "./components/hooks/useWeather"
+
+function WeatherAlertHandler() {
+  const location = "Houston"; // You can dynamically update this later
+  const { visibleAlert } = useWeatherAlerts(location);
+
+  return (
+    <>
+      {visibleAlert && <WeatherAlertBanner alert={visibleAlert} />}
+    </>
+  );
+}
 
 function Router() {
   return (

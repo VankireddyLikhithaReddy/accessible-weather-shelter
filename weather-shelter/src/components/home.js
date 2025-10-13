@@ -9,10 +9,22 @@ import { LocationInput } from "./locationInput";
 
 //import { Button } from "@/components/ui/button";
 import { MapPin, Loader2 } from "lucide-react";
-import { useCurrentWeather, useWeatherForecast, useWeatherAlerts } from "./hooks/useWeather";
+import { useCurrentWeather, useWeatherForecast, useWeatherAlerts, WeatherAlertBanner } from "./hooks/useWeather";
 import { useTTS } from "./hooks/useTTS";
 import { useToast } from "./hooks/useToast";
 import "bootstrap/dist/css/bootstrap.min.css";
+
+export function WeatherAlertHandler({ location }) {
+  const { visibleAlert } = useWeatherAlerts(location);
+
+  if (!location) return null; // nothing to fetch until user searches
+
+  return (
+    <>
+      {visibleAlert && <WeatherAlertBanner alert={visibleAlert} />}
+    </>
+  );
+}
 
 export default function Home() {
   const [location, setLocation] = useState("London");
