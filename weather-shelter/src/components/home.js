@@ -23,7 +23,7 @@ const { toast, addToast, removeToast } = useToast();
 
   const { data: weatherData, isLoading: weatherLoading, error: weatherError } = useCurrentWeather(location);
   const { data: forecastData, isLoading: forecastLoading } = useWeatherForecast(location, 3);
-  const { data: alertsData } = useWeatherAlerts(location);
+  const { data: alertsData, isLoading: alertsLoading} = useWeatherAlerts(location);
 
   const {
     speak,
@@ -37,6 +37,9 @@ const { toast, addToast, removeToast } = useToast();
     updateVoice,
     isSupported,
   } = useTTS();
+if (alertsLoading) {
+      console.log("Weather Alerts API Response:", alertsLoading);
+    }
 
   const [dismissedAlerts, setDismissedAlerts] = useState(new Set());
 

@@ -32,11 +32,13 @@ export function useWeatherAlerts(location) {
   return useQuery({
     queryKey: ['/api/weather/alerts', location],
     queryFn: async () => {
-      const response = await fetch(`/api/weather/alerts/${encodeURIComponent(location)}`);
+      const response = await fetch(`http://localhost:3001/api/weather/alerts/${encodeURIComponent(location)}`);
+      console.log(response)
       if (!response.ok) {
         throw new Error('Failed to fetch alerts');
       }
       return response.json();
+    
     },
     enabled: !!location,
     refetchInterval: 60000, // refetch every 1 minute
