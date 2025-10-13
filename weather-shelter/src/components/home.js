@@ -109,7 +109,14 @@ if (alertsLoading) {
       }
     }
   }, [activeAlerts, autoRead, isMuted, speak]);
+useEffect(() => {
+  // Stop TTS when the user reloads or navigates away
+  window.addEventListener("beforeunload", () => {
+    window.speechSynthesis.cancel();
+  });
 
+  return () => window.speechSynthesis.cancel();
+}, []);
   useEffect(() => {
     if (weatherData && autoRead && !isMuted) {
       const weatherText = `Weather update for ${weatherData.location}. Current temperature ${weatherData.temperature} degrees Fahrenheit. Conditions are ${weatherData.condition}. ${weatherData.high ? `High of ${weatherData.high}` : ''}${weatherData.low ? `, low of ${weatherData.low}` : ''}. Humidity ${weatherData.humidity} percent. Wind speed ${weatherData.windSpeed} miles per hour.`;
@@ -141,10 +148,10 @@ if (alertsLoading) {
   return (
     <div className="min-h-screen bg-background">
       {activeAlerts.map((alert) => (
-        <SevereWeatherAlert
+        <WeatherAlertBanner
           key={alert.headline}
           alert={alert}
-          onDismiss={() => handleDismissAlert(alert.headline)}
+          onDismiss={() => handleDismissAlert(null)}
         />
       ))}
 
