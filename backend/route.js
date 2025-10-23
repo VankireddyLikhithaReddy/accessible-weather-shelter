@@ -28,6 +28,7 @@ export async function registerRoutes(app) {
       if (!forecastData || forecastData.length === 0) {
         return res.status(404).json({ error: "Forecast data not found" });
       }
+      console.log("Forecast data:", forecastData);
 
       res.json(forecastData);
     } catch (error) {
