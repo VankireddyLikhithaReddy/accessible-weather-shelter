@@ -19,7 +19,8 @@ export function ForecastCard({ forecast }) {
       style={{ minWidth: "150px" }}
     >
       <div className="card-body">
-        <h3 className="card-title h5">{forecast.day}</h3>
+        {/* <h3 className="card-title h5">{forecast.day}</h3> */}
+        <h3 className="card-title h5">{forecast.date}</h3>
         <IconComponent className="h-6 w-6 mx-auto my-2" aria-hidden="true" />
         <p className="card-text">{forecast.condition}</p>
         <div className="d-flex justify-content-center gap-2 fw-bold">
