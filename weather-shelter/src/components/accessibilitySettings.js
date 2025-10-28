@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Settings } from "lucide-react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { audioFeedback } from "./libs/audioFeedback";
 
 export function AccessibilitySettings({
   autoRead,
@@ -16,13 +17,75 @@ export function AccessibilitySettings({
   const [fontSize, setFontSize] = useState(
     parseInt(localStorage.getItem("fontSize") || 16)
   );
+  const [audioEnabled, setAudioEnabled] = useState(
+    localStorage.getItem("audioFeedbackEnabled")
+      ? localStorage.getItem("audioFeedbackEnabled") === "true"
+      : true
+  );
+  const triggerRef = useRef(null);
+  const modalContentRef = useRef(null);
+  const closeButtonRef = useRef(null);
 
-  // Lock body scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = show ? "hidden" : "auto";
   }, [show]);
 
-  // Apply font size globally
+  useEffect(() => {
+    let previouslyFocused = null;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setShow(false);
+        return;
+      }
+
+      if (e.key === "Tab") {
+        const container = modalContentRef.current;
+        if (!container) return;
+        const focusable = Array.from(
+          container.querySelectorAll(
+            'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((el) => el.offsetParent !== null);
+
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        } else if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      }
+    };
+
+    if (show) {
+      previouslyFocused = document.activeElement;
+      setTimeout(() => {
+        if (closeButtonRef.current) closeButtonRef.current.focus();
+        else if (modalContentRef.current) {
+          const el = modalContentRef.current.querySelector(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          el && el.focus();
+        }
+      }, 0);
+
+      document.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previouslyFocused && previouslyFocused.focus) previouslyFocused.focus();
+    };
+  }, [show]);
+
   useEffect(() => {
     document.documentElement.style.fontSize = `${fontSize}px`;
     localStorage.setItem("fontSize", fontSize);
@@ -30,17 +93,17 @@ export function AccessibilitySettings({
 
   return (
     <>
-      {/* Trigger Button */}
       <button
         className="btn btn-outline-primary btn-lg"
         onClick={() => setShow(true)}
         data-testid="button-accessibility-settings"
+        ref={triggerRef}
+        type="button"
       >
         <Settings className="me-2" />
         Accessibility Settings
       </button>
 
-      {/* Modal */}
       {show && (
         <div
           className="modal d-block"
@@ -62,7 +125,7 @@ export function AccessibilitySettings({
           }}
         >
           <div className="modal-dialog modal-lg">
-            <div className="modal-content">
+            <div className="modal-content" ref={modalContentRef}>
               <div className="modal-header">
                 <h5 className="modal-title" id="accessibilitySettingsLabel">
                   Accessibility Settings
@@ -71,11 +134,11 @@ export function AccessibilitySettings({
                   type="button"
                   className="btn-close"
                   onClick={() => setShow(false)}
+                  ref={closeButtonRef}
                 ></button>
               </div>
 
               <div className="modal-body">
-                {/* Auto-Read Toggle */}
                 <div className="form-check form-switch mb-4 d-flex justify-content-between align-items-center">
                   <div>
                     <label htmlFor="autoReadSwitch" className="form-check-label">
@@ -95,7 +158,6 @@ export function AccessibilitySettings({
                   />
                 </div>
 
-                {/* Speech Rate Slider */}
                 <div className="mb-4">
                   <label htmlFor="speechRateRange" className="form-label">
                     Speech Rate: {speechRate.toFixed(1)}x
@@ -118,7 +180,6 @@ export function AccessibilitySettings({
                   </small>
                 </div>
 
-                {/* Voice Selection */}
                 <div className="mb-4">
                   <label htmlFor="voiceSelect" className="form-label">
                     Voice Selection
@@ -143,7 +204,6 @@ export function AccessibilitySettings({
                   </select>
                 </div>
 
-                {/* 🆕 Font Size Adjustment */}
                 <div className="mb-4">
                   <label htmlFor="fontSizeRange" className="form-label">
                     Font Size: {fontSize}px
@@ -162,6 +222,30 @@ export function AccessibilitySettings({
                   <small className="form-text text-muted">
                     Adjust text size for better readability
                   </small>
+                </div>
+
+                <div className="form-check form-switch mb-4 d-flex justify-content-between align-items-center">
+                  <div>
+                    <label htmlFor="audioFeedbackSwitch" className="form-check-label">
+                      Audio Feedback
+                    </label>
+                    <p className="text-muted mb-0" style={{ fontSize: "0.875rem" }}>
+                      Play a short chime or spoken confirmation for shortcuts and voice commands
+                    </p>
+                  </div>
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="audioFeedbackSwitch"
+                    checked={audioEnabled}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      setAudioEnabled(val);
+                      audioFeedback.setEnabled(val);
+                      try { localStorage.setItem('audioFeedbackEnabled', val ? 'true' : 'false'); } catch (err) {}
+                    }}
+                    data-testid="switch-audio-feedback"
+                  />
                 </div>
               </div>
 
