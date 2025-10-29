@@ -5,8 +5,9 @@ import { ForecastCard } from "./ForecastCard";
 import { SevereWeatherAlert } from "./severeWeatherAlert";
 import { TTSControls } from "./TTSControls";
 import { AccessibilitySettings } from "./accessibilitySettings";
-import { LocationInput } from "./locationInput";
+import LocationInput from "./locationInput";
 import Feedback from "./feedback";
+import ShelterFinder from "./shelterFinder";
 //import { Button } from "@/components/ui/button";
 import { MapPin, Loader2 } from "lucide-react";
 import { useCurrentWeather, useWeatherForecast, useWeatherAlerts, WeatherAlertBanner } from "./hooks/useWeather";
@@ -29,7 +30,10 @@ export function WeatherAlertHandler({ location }) {
 export default function Home() {
   const [location, setLocation] = useState("London");
   const [autoRead, setAutoRead] = useState(false);
-const { toast, addToast, removeToast } = useToast();
+  const { toasts, addToast, removeToast } = useToast();
+
+  const searchInputRef = useRef(null);
+  const headerRef = useRef(null);
 
   const spokenAlertsRef = useRef(new Set());
 
@@ -76,18 +80,16 @@ if (alertsLoading) {
           spokenAlertsRef.current = new Set();
         },
         () => {
-          toast({
+          addToast({
             title: "Location Error",
-            description: "Could not get your current location. Please enter manually.",
-            variant: "destructive",
+            body: "Could not get your current location. Please enter manually.",
           });
         }
       );
     } else {
-      toast({
+      addToast({
         title: "Not Supported",
-        description: "Geolocation is not supported by your browser.",
-        variant: "destructive",
+        body: "Geolocation is not supported by your browser.",
       });
     }
   };
@@ -109,14 +111,81 @@ if (alertsLoading) {
       }
     }
   }, [activeAlerts, autoRead, isMuted, speak]);
-useEffect(() => {
-  // Stop TTS when the user reloads or navigates away
-  window.addEventListener("beforeunload", () => {
-    window.speechSynthesis.cancel();
-  });
+  
+  useEffect(() => {
+    const handleShortcuts = (e) => {
+      if (!e.altKey && !e.ctrlKey && !e.metaKey) {
+        if (e.key === "1") {
+          const el = document.querySelector('[aria-label="Current weather"]');
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            const focusable = el.querySelector('button, a, [tabindex]:not([tabindex="-1"])');
+            focusable && focusable.focus();
+          }
+          addToast({ title: "Navigation", body: "Moved to Weather section" });
+          speak && speak("Moved to Weather section");
+        }
 
-  return () => window.speechSynthesis.cancel();
-}, []);
+        if (e.key === "2") {
+          const el = document.querySelector('[aria-label="Find Emergency Shelters"]');
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            const focusable = el.querySelector('button, a, [tabindex]:not([tabindex="-1"])');
+            focusable && focusable.focus();
+          }
+          addToast({ title: "Navigation", body: "Moved to Shelter section" });
+          speak && speak("Moved to Shelter section");
+        }
+      }
+
+      if (e.altKey && (e.key === "h" || e.key === "H")) {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        const h = document.querySelector('header h1');
+        h && h.setAttribute && h.setAttribute('tabindex', '-1') && h.focus();
+        addToast({ title: "Navigation", body: "Moved to Home" });
+        speak && speak("Moved to Home page");
+      }
+
+      if (e.altKey && (e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+        if (searchInputRef && searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+        addToast({ title: "Navigation", body: "Focused Search" });
+        speak && speak("Search focused");
+      }
+    };
+
+    window.addEventListener("keydown", handleShortcuts);
+    return () => window.removeEventListener("keydown", handleShortcuts);
+  }, [addToast, speak]);
+
+  useEffect(() => {
+    const focusHandler = () => {
+      if (searchInputRef && searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    };
+    window.addEventListener('focus-search', focusHandler);
+    return () => window.removeEventListener('focus-search', focusHandler);
+  }, []);
+
+  useEffect(() => {
+    const voiceHandler = (e) => {
+      const query = e?.detail?.query;
+      if (query) handleLocationSearch(query);
+    };
+    window.addEventListener('voice-search', voiceHandler);
+    return () => window.removeEventListener('voice-search', voiceHandler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => window.speechSynthesis.cancel();
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
   useEffect(() => {
     if (weatherData && autoRead && !isMuted) {
       const weatherText = `Weather update for ${weatherData.location}. Current temperature ${weatherData.temperature} degrees Fahrenheit. Conditions are ${weatherData.condition}. ${weatherData.high ? `High of ${weatherData.high}` : ''}${weatherData.low ? `, low of ${weatherData.low}` : ''}. Humidity ${weatherData.humidity} percent. Wind speed ${weatherData.windSpeed} miles per hour.`;
@@ -166,7 +235,7 @@ useEffect(() => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
         <section className="space-y-6">
-          <LocationInput onSearch={handleLocationSearch} />
+          <LocationInput ref={searchInputRef} onSearch={handleLocationSearch} />
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button
@@ -200,7 +269,6 @@ useEffect(() => {
             <section aria-label="Current weather">
               <WeatherDisplay weather={weatherData} />
             </section>
-
             {isSupported && (
               <section aria-label="Audio controls">
                 <TTSControls
@@ -231,28 +299,6 @@ useEffect(() => {
           </>
         ) : null}
 
-        <section className="text-center space-y-4 py-8">
-          <h2 className="text-2xl md:text-3xl font-bold">
-            Find Emergency Shelters
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Locate nearby emergency shelters and safe locations during severe weather events.
-          </p>
-          <button
-            variant="default"
-            size="lg"
-            className="min-h-16 px-12 text-xl font-semibold"
-            onClick={() => {
-              toast({
-                title: "Coming Soon",
-                description: "Shelter finder feature will be available in the next update.",
-              });
-            }}
-            data-testid="button-find-shelters"
-          >
-            Find Shelters Near Me
-          </button>
-        </section>
 
         <section aria-label="User feedback">
           <Feedback />
