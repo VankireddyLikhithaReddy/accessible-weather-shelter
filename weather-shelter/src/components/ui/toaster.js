@@ -7,7 +7,6 @@ export function Toaster({ toasts }) {
   useEffect(() => {
     if (toasts && toasts.length > 0) {
       setVisibleToasts(toasts);
-      // Auto-hide each toast after 5 seconds
       toasts.forEach((toast) => {
         setTimeout(() => {
           setVisibleToasts((prev) => prev.filter((t) => t.id !== toast.id));
@@ -23,7 +22,7 @@ export function Toaster({ toasts }) {
       className="position-fixed top-0 end-0 p-3"
       style={{ zIndex: 1050 }}
     >
-      {visibleToasts.map(({ id, title, description }) => (
+      {visibleToasts.map(({ id, title, description, body }) => (
         <div
           key={id}
           className="toast show"
@@ -32,7 +31,7 @@ export function Toaster({ toasts }) {
           aria-atomic="true"
         >
           {title && <div className="toast-header">{title}</div>}
-          {description && <div className="toast-body">{description}</div>}
+          {(description || body) && <div className="toast-body">{description || body}</div>}
         </div>
       ))}
     </div>
