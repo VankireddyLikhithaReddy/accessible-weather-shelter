@@ -1,4 +1,5 @@
 import { weatherService } from "./services/weatherService.js";
+import { getShelters } from "./services/shelterService.js";
 
 export async function registerRoutes(app) {
   // Get current weather
@@ -37,7 +38,6 @@ export async function registerRoutes(app) {
     }
   });
 
-  // Get weather alerts
   app.get("/api/weather/alerts/:location", async (req, res) => {
     try {
       const location = req.params.location;
@@ -50,5 +50,23 @@ export async function registerRoutes(app) {
     }
   });
 
-  return app; // Return app so it can be used in server.js
+  app.get("/api/shelters", async (req, res) => {
+    try {
+      const lat = req.query.lat ? parseFloat(req.query.lat) : null;
+      const lon = req.query.lon ? parseFloat(req.query.lon) : null;
+      const radius = req.query.radius ? parseInt(req.query.radius, 10) : 5000;
+
+      if (!lat || !lon) {
+        return res.status(400).json({ error: "Missing required lat and lon query parameters" });
+      }
+
+      const result = await getShelters(lat, lon, radius);
+      res.json({ shelters: result });
+    } catch (error) {
+      console.error("Error fetching shelters:", error);
+      res.status(500).json({ error: error.message || "Failed to fetch shelters" });
+    }
+  });
+
+  return app;
 }

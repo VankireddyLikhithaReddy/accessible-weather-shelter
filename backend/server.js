@@ -1,23 +1,21 @@
 import express from "express";
 import { registerRoutes } from "./route.js";
+import { connectDB } from "./db.js";
 import dotenv from "dotenv";
 import cors from "cors";
 dotenv.config();
 
 const app = express();
 
-// CORS configuration: must be BEFORE routes
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000", // your React app URL
+  origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true, // only works if origin is specific
+  credentials: true,
 }));
 
-// Middleware: JSON and URL parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Middleware: Logging request and response
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -44,18 +42,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Register API routes
+await connectDB();
+
 await registerRoutes(app);
 
-// Global error handler
 app.use((err, req, res, next) => {
   const status = err.status || err.statusCode || 500;
   const message = err.message || "Internal Server Error";
-  console.error("Error:", message);
   res.status(status).json({ message });
 });
 
-// Start server
 const port = parseInt(process.env.PORT || "5000", 10);
 app.listen(port, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${port}`);
