@@ -14,7 +14,7 @@ import AccessibleWeatherApp from './components/weather';
 import { useTTS } from './components/hooks/useTTS';
 import { useToast } from './components/hooks/useToast';
 import { audioFeedback } from './components/libs/audioFeedback';
-import VoiceControl from './components/voiceControl';
+import VoiceControl from './components/voicecontrols';
 import { WeatherDisplay } from './components/weatherDisplay';
 import Home from './components/home';
 
@@ -34,6 +34,7 @@ function Router() {
     <Switch>
       <Route path="/shelter" component={ShelterFinder} />
       <Route path="/weather" component={Home} />
+      <Route path="/" component={Home} />
       <Route path="/:rest*" component={NotFound} />
     </Switch>
   );
@@ -68,15 +69,34 @@ function App() {
       if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
         setLocation('/');
-        setTimeout(() => window.dispatchEvent(new CustomEvent('focus-search')) , 150);
+        setTimeout(() => window.dispatchEvent(new CustomEvent('focus-search')), 150);
         addToast({ title: 'Navigation', body: 'Focused Search' });
         audioFeedback.playChime();
         audioFeedback.speak('Search focused');
       }
     };
 
+    const notifyHandler = (e) => {
+      try {
+        const detail = e?.detail || {};
+        const title = detail.title || 'Notification';
+        const body = detail.body || '';
+        addToast({ title, body });
+        if (body) {
+          audioFeedback.playChime();
+          audioFeedback.speak(body);
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+
     window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener('notify', notifyHandler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+      window.removeEventListener('notify', notifyHandler);
+    };
   }, [setLocation, addToast, speak]);
 
   return (
