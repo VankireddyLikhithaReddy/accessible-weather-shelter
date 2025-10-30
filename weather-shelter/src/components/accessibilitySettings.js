@@ -18,9 +18,13 @@ export function AccessibilitySettings({
     parseInt(localStorage.getItem("fontSize") || 16)
   );
   const [audioEnabled, setAudioEnabled] = useState(
-    localStorage.getItem("audioFeedbackEnabled")
-      ? localStorage.getItem("audioFeedbackEnabled") === "true"
-      : true
+    (() => {
+      try {
+        return audioFeedback.isEnabled();
+      } catch (e) {
+        return true;
+      }
+    })()
   );
   const triggerRef = useRef(null);
   const modalContentRef = useRef(null);
