@@ -67,8 +67,18 @@ export default function VoiceControl() {
       return;
     }
 
-    if (text.includes('shelter') || text.includes('open shelter') || text.includes('go to shelter')) {
-      setLocation('/shelter');
+    if ((text.includes('search shelter'))) {
+      try {
+        window.dispatchEvent(new CustomEvent('voice-find-shelters'));
+      } catch (e) {}
+      addToast({ title: 'Voice', body: 'Finding shelters near you' });
+      audioFeedback.playChime();
+      audioFeedback.speak('Finding shelters near you');
+      return;
+    }
+console.log("Voice command text:", text);
+    if (text.includes('open shelter') || text.includes('open shelters') || text.includes('go to shelter') || text.includes('go to shelters')) {
+      setLocation('/shelters');
       addToast({ title: 'Voice', body: 'Opening Shelter' });
       audioFeedback.playChime();
       audioFeedback.speak('Opening shelter');
@@ -90,6 +100,22 @@ export default function VoiceControl() {
       addToast({ title: 'Voice', body: `Searching for ${query}` });
       audioFeedback.playChime();
       audioFeedback.speak(`Searching for ${query}`);
+      return;
+    }
+
+    if (text.includes('read') || text.includes('repeat')) {
+      window.dispatchEvent(new CustomEvent('tts-repeat'));
+      addToast({ title: 'Voice', body: 'Reading nearest shelter' });
+      audioFeedback.playChime();
+      audioFeedback.speak('Reading nearest shelter');
+      return;
+    }
+
+    if (text.includes('stop reading') || text.includes('stop') || text.includes('cancel')) {
+      window.dispatchEvent(new CustomEvent('tts-stop'));
+      addToast({ title: 'Voice', body: 'Stopping speech' });
+      audioFeedback.playChime();
+      audioFeedback.speak('Stopping speech');
       return;
     }
 
@@ -139,4 +165,3 @@ export default function VoiceControl() {
     </div>
   );
 }
-//made file name changes
