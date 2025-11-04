@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useLocation } from 'wouter';
 import { ThemeToggle } from "./themeToggle";
 import { WeatherDisplay } from "./weatherDisplay";
 import { ForecastCard } from "./ForecastCard";
 import { SevereWeatherAlert } from "./severeWeatherAlert";
 import { TTSControls } from "./TTSControls";
 import { AccessibilitySettings } from "./accessibilitySettings";
-import { LocationInput } from "./locationInput";
+import LocationInput from "./locationInput";
 import Feedback from "./feedback";
-//import { Button } from "@/components/ui/button";
 import { MapPin, Loader2 } from "lucide-react";
 import { useCurrentWeather, useWeatherForecast, useWeatherAlerts, WeatherAlertBanner } from "./hooks/useWeather";
 import { useTTS } from "./hooks/useTTS";
@@ -17,7 +17,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 export function WeatherAlertHandler({ location }) {
   const { visibleAlert } = useWeatherAlerts(location);
 
-  if (!location) return null; // nothing to fetch until user searches
+  if (!location) return null; 
 
   return (
     <>
@@ -27,7 +27,7 @@ export function WeatherAlertHandler({ location }) {
 }
 
 export default function Home() {
-  const [location, setLocation] = useState("London");
+  const [location, setSearchLocation] = useState("London");
   const [autoRead, setAutoRead] = useState(false);
 const { toast, addToast, removeToast } = useToast();
 
@@ -54,6 +54,7 @@ if (alertsLoading) {
     }
 
   const [dismissedAlerts, setDismissedAlerts] = useState(new Set());
+  const [, setLocation] = useLocation();
 
   const activeAlerts = useMemo(
     () => (alertsData?.filter((alert) => !dismissedAlerts.has(alert.headline)) || []),
@@ -61,7 +62,7 @@ if (alertsLoading) {
   );
 
   const handleLocationSearch = (newLocation) => {
-    setLocation(newLocation);
+    setSearchLocation(newLocation);
     setDismissedAlerts(new Set());
     spokenAlertsRef.current = new Set();
   };
@@ -71,7 +72,7 @@ if (alertsLoading) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          setLocation(`${latitude},${longitude}`);
+          setSearchLocation(`${latitude},${longitude}`);
           setDismissedAlerts(new Set());
           spokenAlertsRef.current = new Set();
         },
@@ -110,7 +111,6 @@ if (alertsLoading) {
     }
   }, [activeAlerts, autoRead, isMuted, speak]);
 useEffect(() => {
-  // Stop TTS when the user reloads or navigates away
   window.addEventListener("beforeunload", () => {
     window.speechSynthesis.cancel();
   });
@@ -155,14 +155,46 @@ useEffect(() => {
         />
       ))}
 
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <h1 className="text-xl md:text-2xl font-bold">
-            Accessible Weather
-          </h1>
-          <ThemeToggle />
+      <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top" aria-label="Main navigation">
+        <div className="container">
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); setLocation('/'); }}
+            className="navbar-brand d-flex align-items-center"
+          >
+            <span className="h4 mb-0">Accessible Weather</span>
+          </a>
+
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mainNav"
+            aria-controls="mainNav"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
+
+          <div className="collapse navbar-collapse" id="mainNav">
+            <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+              <li className="nav-item">
+              </li>
+              <li className="nav-item">
+                <button className="nav-link btn btn-link" onClick={() => setLocation('/weather')} aria-label="Weather">Weather</button>
+              </li>
+              <li className="nav-item">
+                <button className="nav-link btn btn-link" onClick={() => setLocation('/shelter')} aria-label="Shelters">Shelters</button>
+              </li>
+            </ul>
+
+            <div className="d-flex align-items-center">
+              <ThemeToggle />
+            </div>
+          </div>
         </div>
-      </header>
+      </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
         <section className="space-y-6">

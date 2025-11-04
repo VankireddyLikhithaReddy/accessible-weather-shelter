@@ -2,7 +2,8 @@ import React, { useState, forwardRef } from "react";
 import { Search } from "lucide-react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-export const LocationInput = forwardRef(function LocationInput({ onSearch }, ref) {
+
+export default forwardRef(function LocationInput({ onSearch }, ref) {
   const [location, setLocation] = useState("");
 
   const handleSubmit = (e) => {
@@ -33,5 +34,3 @@ export const LocationInput = forwardRef(function LocationInput({ onSearch }, ref
     </form>
   );
 });
-
-export default LocationInput;
