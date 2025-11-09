@@ -67,6 +67,23 @@ export default function VoiceControl() {
       return;
     }
 
+    // Font size voice commands
+    if (text.includes('increase font') || text.includes('increase font size') || text.includes('make text bigger') || text.includes('larger font') || text.includes('bigger text')) {
+      try { window.dispatchEvent(new CustomEvent('voice-increase-font')); } catch (e) {}
+      addToast({ title: 'Voice', body: 'Increasing font size' });
+      audioFeedback.playChime();
+      audioFeedback.speak('Increasing font size');
+      return;
+    }
+
+    if (text.includes('decrease font') || text.includes('decrease font size') || text.includes('make text smaller') || text.includes('smaller font') || text.includes('smaller text')) {
+      try { window.dispatchEvent(new CustomEvent('voice-decrease-font')); } catch (e) {}
+      addToast({ title: 'Voice', body: 'Decreasing font size' });
+      audioFeedback.playChime();
+      audioFeedback.speak('Decreasing font size');
+      return;
+    }
+
     if ((text.includes('search shelter'))) {
       try {
         window.dispatchEvent(new CustomEvent('voice-find-shelters'));
@@ -78,7 +95,7 @@ export default function VoiceControl() {
     }
 console.log("Voice command text:", text);
     if (text.includes('open shelter') || text.includes('open shelters') || text.includes('go to shelter') || text.includes('go to shelters')) {
-      setLocation('/shelters');
+      setLocation('/shelter');
       addToast({ title: 'Voice', body: 'Opening Shelter' });
       audioFeedback.playChime();
       audioFeedback.speak('Opening shelter');

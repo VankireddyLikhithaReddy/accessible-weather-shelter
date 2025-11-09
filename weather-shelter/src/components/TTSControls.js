@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { audioFeedback } from './libs/audioFeedback';
 import { Volume2, VolumeX, Play } from "lucide-react";
 import "bootstrap/dist/css/bootstrap.min.css";
 

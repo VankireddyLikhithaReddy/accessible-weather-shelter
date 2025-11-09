@@ -41,7 +41,7 @@ export async function connectDB() {
     }
 
     try {
-        await mongoose.connect(uri, { dbName: process.env.MONGODB_DB || undefined });
+        await mongoose.connect(uri);
         console.log('✅ Connected to MongoDB');
 
         const count = await Shelter.countDocuments();
@@ -61,8 +61,8 @@ export async function connectDB() {
                 const shelters = await Shelter.find().limit(10).lean();
                 if (shelters && shelters.length >= 2) {
                     const samples = [];
-                    const pairs = [[0, 1], [0, 2], [1, 2]].filter(([a, b]) => shelters[a] && shelters[b]);
-                    for (const [a, b] of pairs) {
+                    const pairs = [ [0,1], [0,2], [1,2] ].filter(([a,b]) => shelters[a] && shelters[b]);
+                    for (const [a,b] of pairs) {
                         const origin = shelters[a];
                         const destination = shelters[b];
                         const directions = await getDirections(
