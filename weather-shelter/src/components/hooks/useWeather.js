@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { audioFeedback } from '../libs/audioFeedback';
 
 
 export function useCurrentWeather(location) {
@@ -72,31 +73,10 @@ export function useWeatherAlerts(location) {
         });
 
    // Announce via TTS for blind users
-const message = `⚠️ Severe weather alert for ${location}. ${latestAlert.headline}. ${latestAlert.description}. Please stay safe.`;
-window.speechSynthesis.cancel();
-const utterance = new SpeechSynthesisUtterance(message);
-utterance.rate = 1;
-utterance.pitch = 1;
-utterance.volume = 1;
-utterance.lang = "en-US";
-
-// Try selecting a male voice dynamically
-const voices = window.speechSynthesis.getVoices();
-const mVoice =
-  voices.find(v =>
-    v.lang.startsWith("en") &&
-    /male|David|Guy|Matthew|Mike|John|Brian/i.test(v.name)
-  ) || voices.find(v => v.lang.startsWith("en"));
-
-if (mVoice) {
-  utterance.voice = mVoice;
-  console.log(`🎙 Using voice: ${mVoice.name}`);
-} else {
-}
-
-// Speak the alert
-window.speechSynthesis.speak(utterance);
-console.log("🔊 Announcing weather alert:", message);
+        const message = `⚠️ Severe weather alert for ${location}. ${latestAlert.headline}. ${latestAlert.description}. Please stay safe.`;
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+        try { audioFeedback.speak(message); } catch (e) { console.error('audioFeedback.speak failed', e); }
+        console.log("🔊 Announcing weather alert:", message);
 
 
         setTimeout(() => setVisibleAlert(null), 60000);
@@ -142,7 +122,7 @@ export function WeatherAlertBanner({ alert, onDismiss }) {
 
       <button
         onClick={() => {
-          window.speechSynthesis.cancel();
+          try { window.speechSynthesis.cancel(); } catch (e) {}
           onDismiss?.();
         }}
         style={{

@@ -110,13 +110,15 @@ if (alertsLoading) {
       }
     }
   }, [activeAlerts, autoRead, isMuted, speak]);
-useEffect(() => {
-  window.addEventListener("beforeunload", () => {
-    window.speechSynthesis.cancel();
-  });
+  useEffect(() => {
+    const onBefore = () => { try { window.speechSynthesis.cancel(); } catch (e) {} };
+    window.addEventListener("beforeunload", onBefore);
 
-  return () => window.speechSynthesis.cancel();
-}, []);
+    return () => {
+      try { window.removeEventListener('beforeunload', onBefore); } catch (e) {}
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    };
+  }, []);
   useEffect(() => {
     if (weatherData && autoRead && !isMuted) {
       const weatherText = `Weather update for ${weatherData.location}. Current temperature ${weatherData.temperature} degrees Fahrenheit. Conditions are ${weatherData.condition}. ${weatherData.high ? `High of ${weatherData.high}` : ''}${weatherData.low ? `, low of ${weatherData.low}` : ''}. Humidity ${weatherData.humidity} percent. Wind speed ${weatherData.windSpeed} miles per hour.`;
@@ -263,7 +265,7 @@ useEffect(() => {
           </>
         ) : null}
 
-        <section className="text-center space-y-4 py-8">
+        {/* <section className="text-center space-y-4 py-8">
           <h2 className="text-2xl md:text-3xl font-bold">
             Find Emergency Shelters
           </h2>
@@ -284,11 +286,11 @@ useEffect(() => {
           >
             Find Shelters Near Me
           </button>
-        </section>
+        </section> */}
 
-        <section aria-label="User feedback">
+        {/* <section aria-label="User feedback">
           <Feedback />
-        </section>
+        </section> */}
       </main>
 
       <footer className="border-t mt-12 py-8">

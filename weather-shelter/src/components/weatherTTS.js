@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { audioFeedback } from './libs/audioFeedback';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export default function WeatherTTS() {
@@ -25,12 +26,8 @@ export default function WeatherTTS() {
 
   // Browser-based TTS using Web Speech API
   const speakText = (text) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 1; // Adjust speaking speed
-      utterance.pitch = 1;
-      speechSynthesis.speak(utterance);
+    if (audioFeedback) {
+      audioFeedback.speak(text);
     } else {
       alert('Text-to-Speech not supported in this browser.');
     }

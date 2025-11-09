@@ -26,6 +26,16 @@ export function AccessibilitySettings({
       }
     })()
   );
+  // On first mount, if there is no persisted preference, ensure audio is primed
+  useEffect(() => {
+    try {
+      const key = localStorage.getItem('audioFeedbackEnabled');
+      if (audioEnabled && key === null) {
+        // Prime voices silently (don't play chime to avoid unexpected audio on load)
+        try { if (window.speechSynthesis) window.speechSynthesis.getVoices(); } catch (e) {}
+      }
+    } catch (e) {}
+  }, []);
   const triggerRef = useRef(null);
   const modalContentRef = useRef(null);
   const closeButtonRef = useRef(null);
@@ -94,6 +104,46 @@ export function AccessibilitySettings({
     document.documentElement.style.fontSize = `${fontSize}px`;
     localStorage.setItem("fontSize", fontSize);
   }, [fontSize]);
+
+  // Listen for voice commands that adjust font size ( dispatched from voicecontrols )
+  useEffect(() => {
+    const onIncrease = () => {
+      setFontSize((prev) => {
+        const next = Math.min(24, prev + 2);
+        try { localStorage.setItem('fontSize', next); } catch (e) {}
+        document.documentElement.style.fontSize = `${next}px`;
+        return next;
+      });
+    };
+
+    const onDecrease = () => {
+      setFontSize((prev) => {
+        const next = Math.max(12, prev - 2);
+        try { localStorage.setItem('fontSize', next); } catch (e) {}
+        document.documentElement.style.fontSize = `${next}px`;
+        return next;
+      });
+    };
+
+    const onSet = (e) => {
+      const val = e && e.detail && Number(e.detail.size);
+      if (!val || Number.isNaN(val)) return;
+      const clamped = Math.max(12, Math.min(24, val));
+      setFontSize(clamped);
+      try { localStorage.setItem('fontSize', clamped); } catch (e) {}
+      document.documentElement.style.fontSize = `${clamped}px`;
+    };
+
+    window.addEventListener('voice-increase-font', onIncrease);
+    window.addEventListener('voice-decrease-font', onDecrease);
+    window.addEventListener('voice-set-font-size', onSet);
+
+    return () => {
+      window.removeEventListener('voice-increase-font', onIncrease);
+      window.removeEventListener('voice-decrease-font', onDecrease);
+      window.removeEventListener('voice-set-font-size', onSet);
+    };
+  }, []);
 
   return (
     <>
@@ -244,8 +294,20 @@ export function AccessibilitySettings({
                     checked={audioEnabled}
                     onChange={(e) => {
                       const val = e.target.checked;
-                      setAudioEnabled(val);
-                      audioFeedback.setEnabled(val);
+                      if (val) {
+                        // Enabling audio: set enabled (primes voices + chime) then announce
+                        setAudioEnabled(true);
+                        try { audioFeedback.setEnabled(true); } catch (err) {}
+                        setTimeout(() => {
+                          try { audioFeedback.speak('Audio enabled', null, null, { voiceName: selectedVoice?.name, rate: speechRate }); } catch (err) {}
+                        }, 300);
+                      } else {
+                        // Disabling audio: cancel ongoing speech, play a short forced chime, then disable
+                        try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (err) {}
+                        try { audioFeedback.playChime({}, true); } catch (err) {}
+                        setAudioEnabled(false);
+                        try { audioFeedback.setEnabled(false); } catch (err) {}
+                      }
                       try { localStorage.setItem('audioFeedbackEnabled', val ? 'true' : 'false'); } catch (err) {}
                     }}
                     data-testid="switch-audio-feedback"

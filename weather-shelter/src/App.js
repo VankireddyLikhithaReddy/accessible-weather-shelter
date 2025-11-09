@@ -10,7 +10,8 @@ import { Switch, Route, useLocation } from "wouter";
 import NotFound from './components/notFound';
 import { useWeatherAlerts, WeatherAlertBanner } from "./components/hooks/useWeather"
 import ShelterFinder from './components/shelterFinder';
-import AccessibleWeatherApp from './components/weather';
+import MainPage from './components/mainPage';
+import WeatherPage from './components/home';
 import { useTTS } from './components/hooks/useTTS';
 import { useToast } from './components/hooks/useToast';
 import { audioFeedback } from './components/libs/audioFeedback';
@@ -33,8 +34,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/shelter" component={ShelterFinder} />
-      <Route path="/weather" component={Home} />
-      <Route path="/" component={Home} />
+      <Route path="/weather" component={WeatherPage} />
+      <Route path="/" component={MainPage} />
       <Route path="/:rest*" component={NotFound} />
     </Switch>
   );
