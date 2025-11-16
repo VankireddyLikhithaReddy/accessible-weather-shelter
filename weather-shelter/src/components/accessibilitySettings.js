@@ -138,10 +138,19 @@ export function AccessibilitySettings({
     window.addEventListener('voice-decrease-font', onDecrease);
     window.addEventListener('voice-set-font-size', onSet);
 
+    // Open the accessibility settings modal when voice command triggers
+    const onOpenFromVoice = () => {
+      setShow(true);
+      try { audioFeedback.playChime(); } catch (e) {}
+      try { audioFeedback.speak('Opening accessibility settings'); } catch (e) {}
+    };
+    window.addEventListener('voice-open-accessibility', onOpenFromVoice);
+
     return () => {
       window.removeEventListener('voice-increase-font', onIncrease);
       window.removeEventListener('voice-decrease-font', onDecrease);
       window.removeEventListener('voice-set-font-size', onSet);
+      window.removeEventListener('voice-open-accessibility', onOpenFromVoice);
     };
   }, []);
 
