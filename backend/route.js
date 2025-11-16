@@ -3,6 +3,7 @@ import { getShelters } from "./services/shelterService.js";
 import { Route } from './models/Route.js';
 import { getDirections } from './services/directionsService.js';
 import mongoose from 'mongoose';
+//import { sendSOSMail } from "./services/sosService.js";
 
 export async function registerRoutes(app) {
   app.get("/api/weather/current/:location", async (req, res) => {
@@ -226,5 +227,32 @@ export async function registerRoutes(app) {
   //   }
   // });
 
+  // EMERGENCY SOS EMAIL ENDPOINT
+  app.post("/api/sos/send-email", async (req, res) => {
+    try {
+      const { latitude, longitude, timestamp } = req.body;
+
+      if (!latitude || !longitude || !timestamp) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields (latitude, longitude, timestamp)",
+        });
+      }
+
+      const result = await sendSOSMail({ latitude, longitude, timestamp });
+
+      if (result.success) {
+        res.status(200).json(result);
+      } else {
+        res.status(500).json(result);
+      }
+    } catch (error) {
+      console.error("Error in SOS endpoint:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to send SOS email",
+      });
+    }
+  });
   return app;
 }
