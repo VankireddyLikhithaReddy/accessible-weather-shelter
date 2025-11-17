@@ -12,6 +12,7 @@ import { MapPin, Loader2 } from "lucide-react";
 import { useCurrentWeather, useWeatherForecast, useWeatherAlerts, WeatherAlertBanner } from "./hooks/useWeather";
 import { useTTS } from "./hooks/useTTS";
 import { useToast } from "./hooks/useToast";
+import { audioFeedback } from "./libs/audioFeedback";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 export function WeatherAlertHandler({ location }) {
@@ -27,7 +28,7 @@ export function WeatherAlertHandler({ location }) {
 }
 
 export default function Home() {
-  const [location, setSearchLocation] = useState("London");
+  const [location, setSearchLocation] = useState("Denton");
   const [autoRead, setAutoRead] = useState(false);
 const { toast, addToast, removeToast } = useToast();
 
@@ -93,12 +94,22 @@ if (alertsLoading) {
     }
   };
 
-  const speakWeather = useCallback(() => {
+
+  const speakWeatherWithForecast = useCallback(() => {
     if (!weatherData) return;
 
-    const weatherText = `Weather update for ${weatherData.location}. Current temperature ${weatherData.temperature} degrees Fahrenheit. Conditions are ${weatherData.condition}. ${weatherData.high ? `High of ${weatherData.high}` : ''}${weatherData.low ? `, low of ${weatherData.low}` : ''}. Humidity ${weatherData.humidity} percent. Wind speed ${weatherData.windSpeed} miles per hour.`;
-    speak(weatherText);
-  }, [weatherData, speak]);
+    let fullText = `Weather update for ${weatherData.location}. Current temperature ${weatherData.temperature} degrees Fahrenheit. Conditions are ${weatherData.condition}. ${weatherData.high ? `High of ${weatherData.high}` : ''}${weatherData.low ? `, low of ${weatherData.low}` : ''}. Humidity ${weatherData.humidity} percent. Wind speed ${weatherData.windSpeed} miles per hour.`;
+    
+    // Add 3-day forecast if available
+    if (forecastData && forecastData.length > 0) {
+      fullText += ' Three day forecast: ';
+      forecastData.forEach((day, index) => {
+        fullText += `Day ${index + 1}. ${day.date}. High ${day.high} degrees, Low ${day.low} degrees. Conditions: ${day.condition}. `;
+      });
+    }
+    
+    speak(fullText);  
+  }, [weatherData, forecastData, speak]);
 
   useEffect(() => {
     if (activeAlerts.length > 0 && autoRead && !isMuted) {
@@ -110,6 +121,12 @@ if (alertsLoading) {
       }
     }
   }, [activeAlerts, autoRead, isMuted, speak]);
+
+  useEffect(() => {
+    if (weatherData && !weatherLoading && forecastData && !forecastLoading) {
+      speakWeatherWithForecast();
+    }
+  }, [weatherData, weatherLoading, forecastData, forecastLoading, speakWeatherWithForecast]);
   useEffect(() => {
     const onBefore = () => { try { window.speechSynthesis.cancel(); } catch (e) {} };
     window.addEventListener("beforeunload", onBefore);
@@ -119,12 +136,31 @@ if (alertsLoading) {
       try { window.speechSynthesis.cancel(); } catch (e) {}
     };
   }, []);
+
+  // Listen for voice command to read weather with forecast
   useEffect(() => {
-    if (weatherData && autoRead && !isMuted) {
-      const weatherText = `Weather update for ${weatherData.location}. Current temperature ${weatherData.temperature} degrees Fahrenheit. Conditions are ${weatherData.condition}. ${weatherData.high ? `High of ${weatherData.high}` : ''}${weatherData.low ? `, low of ${weatherData.low}` : ''}. Humidity ${weatherData.humidity} percent. Wind speed ${weatherData.windSpeed} miles per hour.`;
-      speak(weatherText);
-    }
-  }, [weatherData, autoRead, isMuted, speak]);
+    const handleVoiceReadWeather = () => {
+      speakWeatherWithForecast(); 
+    };
+
+    window.addEventListener('voice-read-weather', handleVoiceReadWeather);
+    return () => window.removeEventListener('voice-read-weather', handleVoiceReadWeather);
+  }, [speakWeatherWithForecast]);
+
+  // Handle Escape key to stop speech on weather page
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        try { window.speechSynthesis.cancel(); } catch (err) {}
+        addToast({ title: 'Speech', body: 'Speech stopped' });
+        try { audioFeedback.playChime(); } catch (err) {}
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [addToast]);
 
   const handleDismissAlert = (headline) => {
     setDismissedAlerts((prev) => new Set(prev).add(headline));
@@ -238,7 +274,7 @@ if (alertsLoading) {
             {isSupported && (
               <section aria-label="Audio controls">
                 <TTSControls
-                  onSpeak={speakWeather}
+                  onSpeak={speakWeatherWithForecast}
                   isSpeaking={isSpeaking}
                   onToggleMute={toggleMute}
                   isMuted={isMuted}
