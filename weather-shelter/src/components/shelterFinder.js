@@ -4,6 +4,8 @@ import { audioFeedback } from "./libs/audioFeedback";
 import { attachDistancesToShelters } from "./libs/distance";
 import { useTTS } from "./hooks/useTTS";
 import RoutePlayer from './routePlayer';
+import { useLocation } from 'wouter';
+import { ThemeToggle } from "./themeToggle";
 const SAMPLE_SHELTERS = [
   { id: 1, name: "City Hall Shelter", lat: 51.5079, lon: -0.0877, info: "0.5 miles — Open 24/7" },
   { id: 2, name: "Central High Gym", lat: 51.5090, lon: -0.0850, info: "1.2 miles — Capacity 150" },
@@ -31,6 +33,7 @@ export default function ShelterFinder() {
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const watchRef = React.useRef(null);
   const { speak, cancel, isSpeaking, isSupported } = useTTS();
+  const [, setLocation] = useLocation();
 
   const findShelters = () => {
     setError(null);
@@ -77,15 +80,7 @@ export default function ShelterFinder() {
             setError(msg);
             try { window.dispatchEvent(new CustomEvent('notify', { detail: { title: 'Shelter Finder', body: msg } })); } catch (e) {}
             audioFeedback.playChime();
-            try {
-              if (isSupported) {
-                speak(msg);
-              } else {
-                audioFeedback.speak(msg);
-              }
-            } catch (e) {
-              audioFeedback.speak(msg);
-            }
+            // audioFeedback.speak(msg);
             setResults([]);
             setLoading(false);
             return;
@@ -94,10 +89,10 @@ export default function ShelterFinder() {
           setResults(mapped);
           setLoading(false);
           audioFeedback.playChime();
-          audioFeedback.speak(`${mapped.length} shelters found nearby`);
-          if (isSupported && mapped && mapped.length > 0) {
-            readNearest(mapped[0]);
-          }
+          // After a manual search completes, read all shelters returned by backend
+          try {
+            readAllShelters(mapped);
+          } catch (e) {}
         } catch (err) {
           console.error('Shelter API error', err && err.message ? err.message : err);
           const withDist = SAMPLE_SHELTERS.map((s) => ({
@@ -111,7 +106,8 @@ export default function ShelterFinder() {
           setError('Could not fetch nearby shelters from server — showing local examples.');
           setLoading(false);
           audioFeedback.playChime();
-          audioFeedback.speak('Could not fetch shelters from server. Showing local examples');
+          // Read sample/fallback shelters so user still hears results when server fails
+          try { readAllShelters(withDist); } catch (e) {}
           try { window.dispatchEvent(new CustomEvent('notify', { detail: { title: 'Shelter Finder', body: 'Could not fetch shelters from server — showing local examples.' } })); } catch (e) {}
         }
       },
@@ -158,12 +154,42 @@ export default function ShelterFinder() {
     const details = parts.length > 0 ? parts.join('. ') + '.' : '';
     const text = `Nearest shelter: ${name}. ${details} Distance: ${distText}.`;
 
-    try {
-      if (isSupported) speak(text);
-      else audioFeedback.speak(text);
-    } catch (e) {
-      audioFeedback.speak(text);
+    audioFeedback.speak(text);
+  };
+
+  // Read all shelters. If `list` is provided, use it (useful immediately after fetch);
+  // otherwise fall back to current `results` state.
+  const readAllShelters = (list) => {
+    const listToRead = Array.isArray(list) ? list : results;
+    if (!listToRead || !listToRead.length) {
+      audioFeedback.speak('No shelters found');
+      return;
     }
+
+    let allText = `Found ${listToRead.length} shelters. `;
+    listToRead.forEach((shelter, index) => {
+      const name = shelter.name || 'Unnamed shelter';
+      const parts = [];
+      if (shelter.info) parts.push(shelter.info);
+      if (shelter.capacity) parts.push(`Capacity ${shelter.capacity}`);
+      if (shelter.address) parts.push(`Address: ${shelter.address}`);
+      if (shelter.phone) parts.push(`Phone: ${shelter.phone}`);
+      if (shelter.accessibility && typeof shelter.accessibility === 'object') {
+        const acc = Object.entries(shelter.accessibility)
+          .filter(([, v]) => !!v)
+          .map(([k]) => k.replace(/_/g, ' '))
+          .join(', ');
+        if (acc) parts.push(`Accessibility: ${acc}`);
+      }
+
+      const miles = shelter.distanceMiles ?? shelter.distance ?? (shelter.distanceMeters ? (shelter.distanceMeters / 1609.34) : null);
+      const distText = miles != null ? `${miles.toFixed(1)} miles` : 'distance unavailable';
+
+      const details = parts.length > 0 ? parts.join('. ') + '.' : '';
+      allText += `Shelter ${index + 1}. ${name}. ${details} Distance: ${distText}. `;
+    });
+
+    audioFeedback.speak(allText);
   };
 
   React.useEffect(() => {
@@ -172,7 +198,8 @@ export default function ShelterFinder() {
     const keyHandler = (e) => {
       if (!e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'r' || e.key === 'R')) {
         e.preventDefault();
-        readNearest(results[0]);
+        // Pressing 'R' via keyboard should read ALL shelters
+        readAllShelters();
       }
 
       if (e.key === 'Escape') {
@@ -205,15 +232,16 @@ export default function ShelterFinder() {
     };
   }, []);
 
+  // Auto-trigger removed: users must trigger "Find Shelters" manually via the
+  // button, keyboard shortcut (F) or voice command. This prevents unsolicited
+  // searches and automatic announcements when the page opens.
+
 
   React.useEffect(() => {
     const handler = () => {
       try {
         audioFeedback.playChime();
-        speak && speak('Finding shelters near you');
-      } catch (e) {
-        audioFeedback.speak('Finding shelters near you');
-      }
+      } catch (e) {}
       const btn = document.querySelector('[data-testid="button-find-shelters"]');
       if (btn) btn.click();
       else findShelters();
@@ -229,10 +257,8 @@ export default function ShelterFinder() {
         e.preventDefault();
         try {
           audioFeedback.playChime();
-          speak && speak('Finding shelters near you');
-        } catch (err) {
           audioFeedback.speak('Finding shelters near you');
-        }
+        } catch (err) {}
         const btn = document.querySelector('[data-testid="button-find-shelters"]');
         if (btn) btn.click();
         else findShelters();
@@ -242,8 +268,78 @@ export default function ShelterFinder() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  React.useEffect(() => {
+    const handler = () => {
+      if (results && results.length > 0) {
+        // Get the nearest shelter (first in results)
+        const nearestShelter = results[0];
+        
+        // Find and click the directions button for the nearest shelter
+        const directionsBtn = document.querySelector(`button[aria-label="Get directions to ${nearestShelter.name}"]`);
+        if (directionsBtn) {
+          directionsBtn.click();
+        }
+      }
+    };
+
+    window.addEventListener('voice-get-directions', handler);
+    return () => window.removeEventListener('voice-get-directions', handler);
+  }, [results]);
+
+  React.useEffect(() => {
+    const handler = () => {
+      readAllShelters();
+    };
+
+    window.addEventListener('voice-read-all-shelters', handler);
+    return () => window.removeEventListener('voice-read-all-shelters', handler);
+  }, [results]);
+
   return (
-    <section aria-label="Find Emergency Shelters" className="text-center space-y-4 py-8">
+    <div className="min-h-screen bg-background">
+      <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top" aria-label="Main navigation">
+        <div className="container">
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); setLocation('/'); }}
+            className="navbar-brand d-flex align-items-center"
+          >
+            <span className="h4 mb-0">Accessible Weather</span>
+          </a>
+
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mainNav"
+            aria-controls="mainNav"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
+
+          <div className="collapse navbar-collapse" id="mainNav">
+            <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+              <li className="nav-item">
+              </li>
+              <li className="nav-item">
+                <button className="nav-link btn btn-link" onClick={() => setLocation('/weather')} aria-label="Weather">Weather</button>
+              </li>
+              <li className="nav-item">
+                <button className="nav-link btn btn-link" onClick={() => setLocation('/shelter')} aria-label="Shelters">Shelters</button>
+              </li>
+            </ul>
+
+            <div className="d-flex align-items-center">
+              <ThemeToggle />
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <section aria-label="Find Emergency Shelters" className="text-center space-y-4 py-8">
       <h2 className="text-2xl md:text-3xl font-bold">Find Emergency Shelters</h2>
       <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
         Locate nearby emergency shelters and safe locations during severe weather events.
@@ -400,5 +496,6 @@ export default function ShelterFinder() {
         );
       })()}
     </section>
+    </div>
   );
 }
