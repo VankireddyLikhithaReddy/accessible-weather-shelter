@@ -1,9 +1,58 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useLocation } from 'wouter';
+import { audioFeedback } from './libs/audioFeedback';
+import { useTTS } from './hooks/useTTS';
 
 export default function MainPage() {
   const [, setLocation] = useLocation();
+  const { isSupported } = useTTS();
+  const mainSpokeRef = React.useRef(false);
+
+  useEffect(() => {
+    // Speak the main page title, description and voice command summary once when navigated to
+    if (mainSpokeRef.current) return;
+    mainSpokeRef.current = true;
+
+    try { audioFeedback.playChime(); } catch (e) {}
+    if (!isSupported) return;
+
+    const textParts = [];
+    textParts.push('Accessible Weather and Shelter.');
+    textParts.push('Voice-controlled access to weather information and shelter locations.');
+    textParts.push('Available voice commands include: Navigation. Say "Go to weather" or "Open weather" to open the Weather page. Say "Go to shelter" or "Open shelter" to open the Shelter Finder. Say "Go home" or "Home" to return to the main page.');
+    textParts.push('Shelter Finder commands: Say "Search shelter" to find nearby shelters. Say "Read" or "Repeat" to read the nearest shelter. Say "Stop reading" or "Stop" to stop speech.');
+    textParts.push('Font size commands: Say "Increase font" or "Make text bigger"; say "Decrease font" or "Make text smaller".');
+    textParts.push('Weather commands: Say "Search for [location]" to find weather for a location. Say "Open accessibility settings" or "Open settings". Say "Announce details" to read current weather details.');
+
+    try {
+      audioFeedback.speak(textParts.join(' '));
+    } catch (e) {
+      try { window.speechSynthesis.cancel(); } catch (err) {}
+    }
+
+    // Allow stopping speech via tts-stop event
+    const stopHandler = () => {
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      try { audioFeedback.playChime(); } catch (e) {}
+    };
+    window.addEventListener('tts-stop', stopHandler);
+    return () => window.removeEventListener('tts-stop', stopHandler);
+  }, [isSupported]);
+
+  // Stop speech with Escape key anywhere on the main page
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        try { window.speechSynthesis.cancel(); } catch (err) {}
+        try { audioFeedback.playChime(); } catch (err) {}
+        try { window.dispatchEvent(new CustomEvent('tts-stop')); } catch (err) {}
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   return (
     <div className="container py-5">
@@ -32,19 +81,65 @@ export default function MainPage() {
 
       <div className="card shadow-sm p-4">
         <h4 className="fw-bold mb-3">Voice Commands</h4>
-        <p className="text-muted">Click the Voice button in the bottom right corner and try these commands:</p>
+        <p className="text-muted mb-3">Click the Voice button in the bottom right corner and try these commands:</p>
+        
         <div className="row">
+          <div className="col-md-6 mb-4">
+            <h6 className="fw-bold text-primary"> Navigation</h6>
+            <ul className="list-unstyled small">
+              <li><strong>"Go to weather"</strong> / <strong>"Open weather"</strong></li>
+              <li><strong>"Go to shelter"</strong> / <strong>"Open shelter"</strong></li>
+              <li><strong>"Go home"</strong> / <strong>"Home"</strong></li>
+             
+            </ul>
+          </div>
+          
+
+
+          <div className="col-md-6 mb-4">
+            <h6 className="fw-bold text-primary">Shelter Finder</h6>
+            <ul className="list-unstyled small">
+              <li><strong>"Search shelter"</strong> — Find nearby shelters</li>
+              <li><strong>"Read"</strong> / <strong>"Repeat"</strong> — Read nearest shelter</li>
+              <li><strong>"Stop reading"</strong> / <strong>"Stop"</strong> — Stop speech</li>
+            </ul>
+          </div>
+
+          <div className="col-md-6 mb-4">
+            <h6 className="fw-bold text-primary">Font Size</h6>
+            <ul className="list-unstyled small">
+              <li><strong>"Increase font"</strong> / <strong>"Make text bigger"</strong></li>
+              <li><strong>"Decrease font"</strong> / <strong>"Make text smaller"</strong></li>
+            </ul>
+          </div>
+
+          <div className="col-md-6 mb-4">
+            <h6 className="fw-bold text-primary"> Weather</h6>
+            <ul className="list-unstyled small">
+              <li><strong>"Search for [location]"</strong> — Find weather for a location</li>
+               <li><strong>"Open accessibility settings"</strong> / <strong>"Open settings"</strong></li>
+               <li><strong>"Announce details"</strong> / <strong>"Announce Details"</strong> — Read current weather details</li>
+            </ul>
+          </div>
+        </div>
+
+        <hr />
+        <h6 className="fw-bold text-secondary mt-3 mb-2">Keyboard Shortcuts</h6>
+        <div className="row small">
           <div className="col-md-6">
             <ul className="list-unstyled">
-              <li><strong>"Open weather"</strong> — Navigate to weather page</li>
-              <li><strong>"Open shelter"</strong> — Navigate to shelter page</li>
-              <li><strong>"Go home"</strong> — Return to home page</li>
+              <li><kbd>1</kbd> → Weather page</li>
+              <li><kbd>2</kbd> → Shelter page</li>
+              <li><kbd>Ctrl/Cmd + H</kbd> → Home page</li>
             </ul>
           </div>
           <div className="col-md-6">
             <ul className="list-unstyled">
-              <li><strong>"Search shelter"</strong> — Find nearby shelters</li>
-              <li><strong>"Read"</strong> — Read nearest shelter details</li>
+              <li><kbd>Ctrl/Cmd + S</kbd> → Focus search</li>
+              <li><kbd>Ctrl/Cmd + Shift + S</kbd> → SOS Alert</li>
+              <li><kbd>F</kbd> → Find shelters (Shelter page)</li>
+              <li><kbd>R</kbd> → Read shelter (Shelter page)</li>
+              <li><kbd>Esc</kbd> → Stop speech (Shelter page)</li>
             </ul>
           </div>
         </div>

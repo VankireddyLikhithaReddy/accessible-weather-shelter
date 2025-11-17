@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import logo from './logo.svg';
 import './App.css';
 
@@ -16,6 +16,15 @@ import { useTTS } from './components/hooks/useTTS';
 import { useToast } from './components/hooks/useToast';
 import { audioFeedback } from './components/libs/audioFeedback';
 import VoiceControl from './components/voicecontrols';
+import { SosButton } from "./sos/SosButton";
+
+import { setupSOSKeyboardShortcut } from "./sos/keyboardShortcut";
+import { triggerSOS } from "./sos/triggerSOS";
+
+// ⭐ NEW IMPORTS
+import { SosOverlay } from "./sos/SosOverlay";
+import { registerSosOverlaySetter } from "./sos/triggerSOS";
+
 import { WeatherDisplay } from './components/weatherDisplay';
 import Home from './components/home';
 
@@ -40,11 +49,27 @@ function Router() {
     </Switch>
   );
 }
+
 function App() {
   const [, setLocation] = useLocation();
   const { speak } = useTTS();
   const { toasts, addToast } = useToast();
 
+  // ⭐ NEW STATE FOR SOS OVERLAY
+  const [sosVisible, setSosVisible] = useState(false);
+  const [sosStatus, setSosStatus] = useState("");
+
+  // ⭐ Register overlay setter ONCE
+  useEffect(() => {
+    registerSosOverlaySetter((visible, status) => {
+      setSosVisible(visible);
+      setSosStatus(status);
+    });
+  }, []);
+
+  // ===============================
+  // EXISTING NAVIGATION + SHORTCUTS
+  // ===============================
   useEffect(() => {
     const handler = (e) => {
       if (!e.altKey && !e.metaKey && !e.ctrlKey && e.key === '1') {
@@ -69,9 +94,9 @@ function App() {
 
       if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
-        setLocation('/');
+        setLocation('/weather');
         setTimeout(() => window.dispatchEvent(new CustomEvent('focus-search')), 150);
-        addToast({ title: 'Navigation', body: 'Focused Search' });
+        addToast({ title: 'Navigation', body: 'Search focused on Weather page' });
         audioFeedback.playChime();
         audioFeedback.speak('Search focused');
       }
@@ -87,9 +112,7 @@ function App() {
           audioFeedback.playChime();
           audioFeedback.speak(body);
         }
-      } catch (err) {
-        // ignore
-      }
+      } catch (err) {}
     };
 
     window.addEventListener('keydown', handler);
@@ -100,13 +123,29 @@ function App() {
     };
   }, [setLocation, addToast, speak]);
 
+  // ===============================
+  // ⭐ SOS KEYBOARD SHORTCUT HOOK
+  // ===============================
+  useEffect(() => {
+    const cleanup = setupSOSKeyboardShortcut(() => {
+      triggerSOS(addToast);
+      console.log("🚨 Emergency SOS triggered via keyboard shortcut");
+    });
+    return () => cleanup();
+  }, []);
+
   return (
     <>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <Toaster toasts={toasts} />
+
+          {/* ⭐ NEW SOS OVERLAY - ALWAYS ON TOP */}
+          <SosOverlay visible={sosVisible} status={sosStatus} />
+
           <Router />
           <VoiceControl />
+          <SosButton />   {/* ← Add this */}
         </ThemeProvider>
       </QueryClientProvider>
     </>
