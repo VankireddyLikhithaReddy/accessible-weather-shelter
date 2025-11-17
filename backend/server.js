@@ -1,6 +1,7 @@
 import express from "express";
 import { registerRoutes } from "./route.js";
 import { connectDB } from "./db.js";
+import { registerSosRoutes } from "./sosRoute.js";
 import dotenv from "dotenv";
 import cors from "cors";
 dotenv.config();
@@ -8,9 +9,9 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
+  origin: "http://localhost:3000",
+  methods: "GET,POST",
+  allowedHeaders: "Content-Type"
 }));
 
 app.use(express.json());
@@ -45,6 +46,8 @@ app.use((req, res, next) => {
 await connectDB();
 
 await registerRoutes(app);
+
+registerSosRoutes(app);
 
 app.use((err, req, res, next) => {
   const status = err.status || err.statusCode || 500;
