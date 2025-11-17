@@ -4,7 +4,9 @@ import { useLocation } from 'wouter';
 import { useTTS } from './hooks/useTTS';
 import { useToast } from './hooks/useToast';
 import { audioFeedback } from './libs/audioFeedback';
-
+// 🚨 NEW IMPORT
+import { detectSOSCommand } from "../sos/voiceCommand";
+import { triggerSOS } from "../sos/triggerSOS";
 export default function VoiceControl() {
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef(null);
@@ -34,6 +36,12 @@ export default function VoiceControl() {
       handleCommand(transcript);
     };
 
+    // If the user begins speaking while TTS is playing, cancel TTS immediately
+    recog.onspeechstart = () => {
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      try { audioFeedback.playChime(); } catch (e) {}
+    };
+
     recog.onerror = (e) => {
       console.error('Speech recognition error', e);
       addToast({ title: 'Voice Control', body: 'Speech recognition error' });
@@ -58,6 +66,15 @@ export default function VoiceControl() {
       audioFeedback.speak('Command not recognized');
       return;
     }
+    // 🚨 NEW CODE — EMERGENCY SOS VOICE COMMAND
+    if (detectSOSCommand(text)) {
+      console.log("🚨 Emergency SOS triggered by voice command");
+      // Temporary now — full workflow added in Task #94
+      // 🚨 Use centralized SOS workflow
+      triggerSOS(addToast);
+      return;
+    }
+    console.log("Voice command text:", text);
 
     if (text.includes('weather') || text.includes('open weather') || text.includes('go to weather')) {
       setLocation('/weather');
@@ -84,10 +101,12 @@ export default function VoiceControl() {
       return;
     }
 
-    if ((text.includes('search shelter'))) {
-      try {
-        window.dispatchEvent(new CustomEvent('voice-find-shelters'));
-      } catch (e) {}
+    if ((text.includes('shelter find')) || (text.includes('find shelter')) || (text.includes('search shelter'))) {
+      // Navigate to shelter page first, then trigger find shelters
+      try { setLocation('/shelter'); } catch (e) {}
+      setTimeout(() => {
+        try { window.dispatchEvent(new CustomEvent('voice-find-shelters')); } catch (e) {}
+      }, 150);
       addToast({ title: 'Voice', body: 'Finding shelters near you' });
       audioFeedback.playChime();
       audioFeedback.speak('Finding shelters near you');
@@ -110,13 +129,37 @@ console.log("Voice command text:", text);
       return;
     }
 
+    // Accessibility settings (modal on weather page)
+    if (text.includes('accessibility') || text.includes('accessibility settings') || text.includes('open accessibility') || text.includes('open accessibility settings') || text.includes('open settings')) {
+      try { setLocation('/weather'); } catch (e) {}
+      setTimeout(() => {
+        try { window.dispatchEvent(new CustomEvent('voice-open-accessibility')); } catch (e) {}
+      }, 100);
+      addToast({ title: 'Voice', body: 'Opening Accessibility Settings' });
+      audioFeedback.playChime();
+      // audioFeedback.speak('Opening accessibility settings');
+      return;
+    }
+
     const searchMatch = text.match(/search (for )?(.*)/i);
     if (searchMatch && searchMatch[2]) {
       const query = searchMatch[2].trim();
-      window.dispatchEvent(new CustomEvent('voice-search', { detail: { query } }));
+      // Navigate to weather page first, then dispatch search event
+      try { setLocation('/weather'); } catch (e) {}
+      setTimeout(() => {
+        try { window.dispatchEvent(new CustomEvent('voice-search', { detail: { query } })); } catch (e) {}
+      }, 150);
       addToast({ title: 'Voice', body: `Searching for ${query}` });
       audioFeedback.playChime();
       audioFeedback.speak(`Searching for ${query}`);
+      return;
+    }
+
+    if (text.includes('announce details') || text.includes('announce weather')) {
+      try { window.dispatchEvent(new CustomEvent('voice-read-weather')); } catch (e) {}
+      addToast({ title: 'Voice', body: 'Reading weather details' });
+      audioFeedback.playChime();
+      audioFeedback.speak('Reading weather details');
       return;
     }
 
@@ -125,6 +168,14 @@ console.log("Voice command text:", text);
       addToast({ title: 'Voice', body: 'Reading nearest shelter' });
       audioFeedback.playChime();
       audioFeedback.speak('Reading nearest shelter');
+      return;
+    }
+
+    if (text.includes('directions') || text.includes('get directions') || text.includes('navigate')) {
+      try { window.dispatchEvent(new CustomEvent('voice-get-directions')); } catch (e) {}
+      addToast({ title: 'Voice', body: 'Getting directions to nearest shelter' });
+      audioFeedback.playChime();
+      audioFeedback.speak('Getting directions to the nearest shelter');
       return;
     }
 
@@ -141,6 +192,27 @@ console.log("Voice command text:", text);
     audioFeedback.speak('Command not recognized');
   };
 
+  // Toggle listening with Spacebar (press once to start, press again to stop).
+  // Ignore when focus is on input/textarea or contentEditable to avoid interfering with typing.
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if (e.code !== 'Space') return;
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+
+      const active = document.activeElement;
+      const tag = active && active.tagName && active.tagName.toUpperCase();
+      const isEditable = active && (active.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || active.getAttribute('role') === 'textbox');
+      if (isEditable) return;
+
+      e.preventDefault();
+      // Toggle listening state
+      toggleListening();
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [/* no deps intentionally so it uses latest toggleListening via closure */]);
+
   const toggleListening = () => {
     if (!recognitionRef.current) {
       addToast({ title: 'Voice', body: 'Speech Recognition not available' });
@@ -155,6 +227,9 @@ console.log("Voice command text:", text);
       audioFeedback.speak('Stopped listening');
     } else {
       try {
+        // Cancel any ongoing TTS before starting recognition so speech stops immediately
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+        try { audioFeedback.playChime(); } catch (e) {}
         recognitionRef.current.start();
         setListening(true);
         addToast({ title: 'Voice', body: 'Listening for commands' });
