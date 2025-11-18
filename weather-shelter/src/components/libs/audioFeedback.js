@@ -63,16 +63,16 @@ function speak(text, onEnd, onError, opts = {}) {
           const v2 = window.speechSynthesis.getVoices() || [];
           if (v2.length) {
             resolved = true;
-            try { window.speechSynthesis.onvoiceschanged = null; } catch (e) {}
+            window.speechSynthesis.onvoiceschanged = null;
             resolve(v2);
           }
         };
-        try { window.speechSynthesis.onvoiceschanged = handler; } catch (e) {}
+        window.speechSynthesis.onvoiceschanged = handler;
         // fallback after a short wait
         setTimeout(() => {
           if (resolved) return;
           resolved = true;
-          try { window.speechSynthesis.onvoiceschanged = null; } catch (e) {}
+          window.speechSynthesis.onvoiceschanged = null;
           resolve(window.speechSynthesis.getVoices() || []);
         }, 800);
       });
@@ -107,7 +107,6 @@ function speak(text, onEnd, onError, opts = {}) {
           u.onstart = () => { try { console.log('audioFeedback.speak onstart', u.voice && (u.voice.name || u.voice.lang)); } catch (e) {} };
           u.onend = () => { try { console.log('audioFeedback.speak onend'); } catch (e) {} ; try { onEnd && onEnd(); } catch (e) {} };
           u.onerror = (err) => { try { console.error('audioFeedback.speak error', err); } catch (e) {} ; try { onError && onError(err); } catch (e) {} };
-
           // Do not cancel other utterances aggressively; just speak this one.
           try { window.speechSynthesis.speak(u); } catch (e) { console.error('speechSynthesis.speak failed', e); }
         } catch (e) {
