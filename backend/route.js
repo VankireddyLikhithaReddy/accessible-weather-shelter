@@ -256,3 +256,4 @@ export async function registerRoutes(app) {
   });
   return app;
 }
+
