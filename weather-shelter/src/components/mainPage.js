@@ -3,6 +3,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { useLocation } from 'wouter';
 import { audioFeedback } from './libs/audioFeedback';
 import { useTTS } from './hooks/useTTS';
+import { ThemeToggle } from "./themeToggle";
+import LogoutButton from './LogoutButton';
 
 export default function MainPage() {
   const [, setLocation] = useLocation();
@@ -55,6 +57,50 @@ export default function MainPage() {
   }, []);
 
   return (
+    <>
+
+      <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top" aria-label="Main navigation">
+        <div className="container">
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); setLocation('/home'); }}
+            className="navbar-brand d-flex align-items-center"
+          >
+            <span className="h4 mb-0">Accessible Weather</span>
+          </a>
+
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mainNav"
+            aria-controls="mainNav"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
+
+          <div className="collapse navbar-collapse" id="mainNav">
+            <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+              <li className="nav-item">
+              </li>
+              <li className="nav-item">
+                <button className="nav-link btn btn-link" onClick={() => setLocation('/weather')} aria-label="Weather">Weather</button>
+              </li>
+              <li className="nav-item">
+                <button className="nav-link btn btn-link" onClick={() => setLocation('/shelters')} aria-label="Shelters">Shelters</button>
+              </li>
+            </ul>
+
+            <div className="d-flex align-items-center">
+              <ThemeToggle />
+              <LogoutButton />
+            </div>
+          </div>
+        </div>
+      </nav>
+
     <div className="container py-5">
       <header className="text-center mb-5">
         <h1 className="fw-bold display-5">Accessible Weather & Shelter</h1>
@@ -74,7 +120,7 @@ export default function MainPage() {
           <div className="card shadow-sm p-4">
             <h3 className="fw-bold"><span role="img" aria-label="home">🏠</span> Shelter Locations</h3>
             <p className="text-muted">Find nearby shelters and emergency services</p>
-            <button className="btn btn-primary mt-3" onClick={() => setLocation('/shelter')}>Find Shelters</button>
+            <button className="btn btn-primary mt-3" onClick={() => setLocation('/shelters')}>Find Shelters</button>
           </div>
         </div>
       </div>
@@ -145,5 +191,6 @@ export default function MainPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

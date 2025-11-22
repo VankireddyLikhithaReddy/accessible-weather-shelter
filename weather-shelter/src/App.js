@@ -9,15 +9,17 @@ import { Toaster } from './components/ui/toaster';
 import { Switch, Route, useLocation } from "wouter";
 import NotFound from './components/notFound';
 import { useWeatherAlerts, WeatherAlertBanner } from "./components/hooks/useWeather"
-import ShelterFinder from './components/shelterFinder';
 import MainPage from './components/mainPage';
 import WeatherPage from './components/home';
+import Login from './components/Login';
 import { useTTS } from './components/hooks/useTTS';
 import { useToast } from './components/hooks/useToast';
 import { audioFeedback } from './components/libs/audioFeedback';
 import VoiceControl from './components/voicecontrols';
+import GlobalAccessibilityListener from './components/GlobalAccessibilityListener';
+import GlobalSpeechController from './components/GlobalSpeechController';
 import { SosButton } from "./sos/SosButton";
-
+import SheltersPage from './components/SheltersPage';
 import { setupSOSKeyboardShortcut } from "./sos/keyboardShortcut";
 import { triggerSOS } from "./sos/triggerSOS";
 
@@ -42,10 +44,13 @@ function WeatherAlertHandler() {
 function Router() {
   return (
     <Switch>
-      <Route path="/shelter" component={ShelterFinder} />
+      <Route path="/shelters" component={SheltersPage} />
+      <Route path="/login" component={Login} />
+      <Route path="/home" component={MainPage} />
       <Route path="/weather" component={WeatherPage} />
-      <Route path="/" component={MainPage} />
+      <Route path="/" component={Login} />
       <Route path="/:rest*" component={NotFound} />
+      
     </Switch>
   );
 }
@@ -67,9 +72,6 @@ function App() {
     });
   }, []);
 
-  // ===============================
-  // EXISTING NAVIGATION + SHORTCUTS
-  // ===============================
   useEffect(() => {
     const handler = (e) => {
       if (!e.altKey && !e.metaKey && !e.ctrlKey && e.key === '1') {
@@ -80,15 +82,15 @@ function App() {
       }
 
       if (!e.altKey && !e.metaKey && !e.ctrlKey && e.key === '2') {
-        setLocation('/shelter');
-        addToast({ title: 'Navigation', body: 'Moved to Shelter page' });
+        setLocation('/shelters');
+        addToast({ title: 'Navigation', body: 'Moved to Shelters page' });
         audioFeedback.playChime();
-        audioFeedback.speak('Moved to Shelter page');
+        audioFeedback.speak('Moved to Shelters page');
       }
 
       if ((e.ctrlKey || e.metaKey) && (e.key === 'h' || e.key === 'H')) {
         e.preventDefault();
-        setLocation('/');
+        setLocation('/home');
         audioFeedback.playChime();
       }
 
@@ -134,6 +136,14 @@ function App() {
     return () => cleanup();
   }, []);
 
+  useEffect(() => {
+    const cleanup = setupSOSKeyboardShortcut(() => {
+      triggerSOS(addToast);
+      console.log("🚨 Emergency SOS triggered via keyboard shortcut");
+    });
+    return () => cleanup();
+  }, []);
+
   return (
     <>
       <QueryClientProvider client={queryClient}>
@@ -142,9 +152,10 @@ function App() {
 
           {/* ⭐ NEW SOS OVERLAY - ALWAYS ON TOP */}
           <SosOverlay visible={sosVisible} status={sosStatus} />
-
-          <Router />
+            <Router />
           <VoiceControl />
+          <GlobalAccessibilityListener />
+          <GlobalSpeechController />
           <SosButton />   {/* ← Add this */}
         </ThemeProvider>
       </QueryClientProvider>
