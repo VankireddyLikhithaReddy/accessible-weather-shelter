@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from 'wouter';
 import { ThemeToggle } from "./themeToggle";
+import LogoutButton from './LogoutButton';
 import { WeatherDisplay } from "./weatherDisplay";
 import { ForecastCard } from "./ForecastCard";
 import { SevereWeatherAlert } from "./severeWeatherAlert";
@@ -50,6 +51,8 @@ const { toast, addToast, removeToast } = useToast();
     updateVoice,
     isSupported,
   } = useTTS();
+  // Prevent duplicate automatic announcements when the component mounts/re-mounts
+  const lastSpokenWeatherKey = useRef(null);
 if (alertsLoading) {
       console.log("Weather Alerts API Response:", alertsLoading);
     }
@@ -124,6 +127,11 @@ if (alertsLoading) {
 
   useEffect(() => {
     if (weatherData && !weatherLoading && forecastData && !forecastLoading) {
+      // build a simple key representing this specific weather+forecast payload
+      const key = `${weatherData.location || ''}:${weatherData.temperature || ''}:${(forecastData && forecastData.length) || 0}`;
+      // if we've already announced this exact payload, skip to avoid duplicates
+      if (lastSpokenWeatherKey.current === key) return;
+      lastSpokenWeatherKey.current = key;
       speakWeatherWithForecast();
     }
   }, [weatherData, weatherLoading, forecastData, forecastLoading, speakWeatherWithForecast]);
@@ -197,7 +205,7 @@ if (alertsLoading) {
         <div className="container">
           <a
             href="#"
-            onClick={(e) => { e.preventDefault(); setLocation('/'); }}
+            onClick={(e) => { e.preventDefault(); setLocation('/home'); }}
             className="navbar-brand d-flex align-items-center"
           >
             <span className="h4 mb-0">Accessible Weather</span>
@@ -223,12 +231,13 @@ if (alertsLoading) {
                 <button className="nav-link btn btn-link" onClick={() => setLocation('/weather')} aria-label="Weather">Weather</button>
               </li>
               <li className="nav-item">
-                <button className="nav-link btn btn-link" onClick={() => setLocation('/shelter')} aria-label="Shelters">Shelters</button>
+                <button className="nav-link btn btn-link" onClick={() => setLocation('/shelters')} aria-label="Shelters">Shelters</button>
               </li>
             </ul>
 
             <div className="d-flex align-items-center">
               <ThemeToggle />
+              <LogoutButton />
             </div>
           </div>
         </div>
