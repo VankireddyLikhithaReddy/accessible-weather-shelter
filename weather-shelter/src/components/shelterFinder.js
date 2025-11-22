@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { audioFeedback } from "./libs/audioFeedback";
 import { attachDistancesToShelters } from "./libs/distance";
@@ -6,6 +6,7 @@ import { useTTS } from "./hooks/useTTS";
 import RoutePlayer from './routePlayer';
 import { useLocation } from 'wouter';
 import { ThemeToggle } from "./themeToggle";
+import LogoutButton from './LogoutButton';
 const SAMPLE_SHELTERS = [
   { id: 1, name: "City Hall Shelter", lat: 51.5079, lon: -0.0877, info: "0.5 miles — Open 24/7" },
   { id: 2, name: "Central High Gym", lat: 51.5090, lon: -0.0850, info: "1.2 miles — Capacity 150" },
@@ -34,6 +35,15 @@ export default function ShelterFinder() {
   const watchRef = React.useRef(null);
   const { speak, cancel, isSpeaking, isSupported } = useTTS();
   const [, setLocation] = useLocation();
+
+  // Speak once when the Shelter page is opened
+  const spokeOnMountRef = useRef(false);
+  useEffect(() => {
+    if (spokeOnMountRef.current) return;
+    spokeOnMountRef.current = true;
+    try { audioFeedback.playChime(); } catch (e) {}
+    try { speak && speak('Opened Shelter Finder'); } catch (e) {}
+  }, [speak]);
 
   const findShelters = () => {
     setError(null);
@@ -302,7 +312,7 @@ export default function ShelterFinder() {
         <div className="container">
           <a
             href="#"
-            onClick={(e) => { e.preventDefault(); setLocation('/'); }}
+            onClick={(e) => { e.preventDefault(); setLocation('/home'); }}
             className="navbar-brand d-flex align-items-center"
           >
             <span className="h4 mb-0">Accessible Weather</span>
@@ -328,12 +338,13 @@ export default function ShelterFinder() {
                 <button className="nav-link btn btn-link" onClick={() => setLocation('/weather')} aria-label="Weather">Weather</button>
               </li>
               <li className="nav-item">
-                <button className="nav-link btn btn-link" onClick={() => setLocation('/shelter')} aria-label="Shelters">Shelters</button>
+                <button className="nav-link btn btn-link" onClick={() => setLocation('/shelters')} aria-label="Shelters">Shelters</button>
               </li>
             </ul>
 
             <div className="d-flex align-items-center">
               <ThemeToggle />
+              <LogoutButton />
             </div>
           </div>
         </div>
