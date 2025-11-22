@@ -3,6 +3,7 @@ import { getShelters } from "./services/shelterService.js";
 import { Route } from './models/Route.js';
 import { getDirections } from './services/directionsService.js';
 import mongoose from 'mongoose';
+import { createUser, verifyUser, findUserByUsername } from './services/userService.js';
 //import { sendSOSMail } from "./services/sosService.js";
 
 export async function registerRoutes(app) {
@@ -52,6 +53,40 @@ export async function registerRoutes(app) {
       res.status(500).json({ error: error.message || "Failed to fetch alert data" });
     }
   });
+
+  // Users: signup
+  app.post('/api/users', async (req, res) => {
+    try {
+      const { username, password, emergencyEmail } = req.body || {};
+      if (!username || !password) return res.status(400).json({ error: 'Missing username or password' });
+      try {
+        const user = await createUser(username, password, typeof emergencyEmail === 'string' ? emergencyEmail : '');
+        return res.json({ user: { id: user._id, username: user.username, emergencyEmail: user.emergencyEmail } });
+      } catch (err) {
+        if (err && err.code === 'EEXISTS') return res.status(409).json({ error: 'User already exists' });
+        throw err;
+      }
+    } catch (err) {
+      console.error('Error creating user', err);
+      return res.status(500).json({ error: err.message || 'Failed to create user' });
+    }
+  });
+
+  // Users: login (simple verification, returns user info on success)
+  app.post('/api/users/login', async (req, res) => {
+    try {
+      const { username, password } = req.body || {};
+      if (!username || !password) return res.status(400).json({ error: 'Missing username or password' });
+      const user = await verifyUser(username, password);
+      if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+      const safe = { id: user._id, username: user.username, emergencyEmail: user.emergencyEmail || '' };
+      return res.json({ user: safe });
+    } catch (err) {
+      console.error('Error logging in user', err);
+      return res.status(500).json({ error: err.message || 'Failed to login' });
+    }
+  });
+
 
   app.get("/api/shelters", async (req, res) => {
     try {
