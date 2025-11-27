@@ -1,7 +1,7 @@
 // src/sos/sosApi.js
 
 export async function sendSOSRequest({ latitude, longitude }) {
-  const response = await fetch("http://localhost:5000/api/sos/send", {
+  const response = await fetch("https://accessible-weather-shelter.vercel.app/api/sos/send", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -12,5 +12,3 @@ export async function sendSOSRequest({ latitude, longitude }) {
 
   return response.json();
 }
-
-

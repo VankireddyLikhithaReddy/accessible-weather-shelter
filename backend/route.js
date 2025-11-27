@@ -265,9 +265,9 @@ export async function registerRoutes(app) {
   // EMERGENCY SOS EMAIL ENDPOINT
   app.post("/api/sos/send-email", async (req, res) => {
     try {
-      const { latitude, longitude, timestamp } = req.body;
+      const { lat, long } = req.body;
 
-      if (!latitude || !longitude || !timestamp) {
+      if (!lat || !long ) {
         return res.status(400).json({
           success: false,
           message: "Missing required fields (latitude, longitude, timestamp)",
