@@ -59,19 +59,24 @@ export default function ShelterFinderPlaces() {
   const [manualAddress, setManualAddress] = useState('');
 
   // Announce when the user navigates to the shelters page
+  const mountAnnouncedRef = React.useRef(false);
   useEffect(() => {
-    const msg = 'Navigated to shelters page';
-    setAnnouncement(msg);
+    if (mountAnnouncedRef.current) return;
+    mountAnnouncedRef.current = true;
+    const pageMsg = 'Navigated to shelters page.';
+    const voiceCmds = 'Available voice commands: Find shelters; Severe weather; Read nearest; Read all; Get directions to shelter followed by a number; Next step; Previous step; Stop navigation.';
+    const combined = `${pageMsg} ${voiceCmds}`;
+    setAnnouncement(combined);
     try {
       if (isSupported) {
-        speak && speak(msg);
+        speak && speak(combined);
       } else {
-        audioFeedback.speak(msg);
+        try { audioFeedback.speak(combined); } catch (e) {}
       }
     } catch (e) {
-      try { audioFeedback.speak(msg); } catch (err) {}
+      try { audioFeedback.speak(combined); } catch (err) {}
     }
-  }, []);
+  }, [isSupported, speak]);
 
   // findShelters accepts a flag to indicate severe-weather search behavior
   const findShelters = async (severeModeFlag = false) => {
@@ -382,6 +387,9 @@ export default function ShelterFinderPlaces() {
   // When a voice command asks for directions but no results exist yet,
   // store the pending index so we can start navigation after results arrive.
   const [pendingNavigationIndex, setPendingNavigationIndex] = useState(null);
+  // When a voice command asks to open maps but no results exist yet,
+  // store the pending index so we can open maps after results arrive.
+  const [pendingMapIndex, setPendingMapIndex] = useState(null);
 
   const stripHtml = (html) => {
     if (!html) return '';
@@ -510,16 +518,29 @@ export default function ShelterFinderPlaces() {
       setCurrentStepIndex(0);
       setDirectionsError(null);
       setPendingNavigationIndex(null);
+      setPendingMapIndex(null);
       try { speak && speak('Navigation stopped'); } catch (e) {}
     };
 
     window.addEventListener('voice-get-directions', onGetDirections);
+    const onOpenMaps = (e) => {
+      const idx = e && e.detail && Number.isInteger(e.detail.index) ? e.detail.index : 0;
+      if (results && results.length) {
+        const target = results[Math.min(idx, results.length - 1)];
+        if (target) openExternalDirections(target);
+        return;
+      }
+      setPendingMapIndex(idx);
+      findShelters();
+    };
+    window.addEventListener('voice-open-maps', onOpenMaps);
     window.addEventListener('voice-next-step', onNext);
     window.addEventListener('voice-prev-step', onPrev);
     window.addEventListener('voice-stop-navigation', onStopNav);
 
     return () => {
       window.removeEventListener('voice-get-directions', onGetDirections);
+      window.removeEventListener('voice-open-maps', onOpenMaps);
       window.removeEventListener('voice-next-step', onNext);
       window.removeEventListener('voice-prev-step', onPrev);
       window.removeEventListener('voice-stop-navigation', onStopNav);
@@ -535,6 +556,49 @@ export default function ShelterFinderPlaces() {
     if (target) startStepByStep(target);
     setPendingNavigationIndex(null);
   }, [results, pendingNavigationIndex]);
+
+    // When results update, if there's a pending request to open maps, do it now
+    useEffect(() => {
+      if (pendingMapIndex === null) return;
+      if (!results || !results.length) return;
+      const idx = Math.min(pendingMapIndex, results.length - 1);
+      const target = results[idx];
+      if (target) openExternalDirections(target);
+      setPendingMapIndex(null);
+    }, [results, pendingMapIndex]);
+
+  // Keyboard shortcuts (global while on this page):
+  // - F: Find shelters
+  // - R: Read nearest shelter
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      try {
+        const active = document && document.activeElement;
+        const tag = active && active.tagName;
+        const editable = active && active.getAttribute && active.getAttribute('contenteditable') === 'true';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || editable) return;
+      } catch (err) {
+        // ignore
+      }
+
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        findShelters();
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        if (results && results.length) {
+          readNearest(results[0]);
+        } else {
+          setPendingNavigationIndex(null);
+          findShelters();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [results, runtimeKey]);
 
   return (
     <>
@@ -645,6 +709,28 @@ export default function ShelterFinderPlaces() {
         <button className="btn btn-outline-secondary btn-sm" onClick={() => readNearest(results[0])} disabled={!results || !results.length}>Read Nearest</button>
         <button className="btn btn-outline-secondary btn-sm" onClick={readAll} disabled={!results || !results.length}>Read All</button>
       </div>
+
+      {/* Voice commands help: visible to users so they know what to say */}
+      <div className="card mb-3" aria-label="Voice commands">
+        <div className="card-body">
+          <strong>Voice Commands</strong>
+          <ul className="mb-0 mt-2">
+            <li><code>Find shelters</code> — Start a shelter search (also: "find shelter", "find nearest shelters").</li>
+            {/* <li><code>Severe weather</code> — Run a severe-weather focused shelter search.</li> */}
+            <li><code>Read nearest</code> / <code>Read nearest shelter</code> — Read the nearest shelter aloud.</li>
+            <li><code>Read all</code> — Read all found shelters aloud.</li>
+            <li><code>Open maps</code> — Open Google Maps directions to the nearest shelter.</li>
+            <li><code>Directions to shelter</code> — Start navigation to a nearest result.</li>
+            <li><code>Next</code> / <code>Next step</code> — Go to the next navigation step.</li>
+            <li><code>Previous</code> / <code>Previous step</code> — Go to the previous navigation step.</li>
+            <li><code>Stop navigation</code> — Stop step-by-step navigation.</li>
+          </ul>
+          <small className="text-muted d-block mt-2">Keyboard: Press <strong>F</strong> to find shelters, <strong>R</strong> to read nearest shelter.</small>
+        </div>
+      </div>
+
+      {/* Keyboard shortcuts: F = Find, R = Read nearest */}
+      { /* Add a global key handler that is active on the shelters page */ }
 
       <ul className="list-group">
         {results.map((r) => (

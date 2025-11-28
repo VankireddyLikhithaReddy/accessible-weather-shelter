@@ -49,3 +49,40 @@
 body {
   transition: background-color 0.5s ease, color 0.5s ease;
 }
+
+/* Dark mode overrides for common Bootstrap components */
+.dark .navbar {
+  background-color: #1f1f1f !important;
+}
+.dark .navbar .nav-link,
+.dark .navbar .navbar-brand {
+  color: #e6e6e6 !important;
+}
+.dark .card,
+.dark .card-body,
+.dark .list-group-item,
+.dark .alert {
+  background-color: #1a1a1a !important;
+  color: #e6e6e6 !important;
+  border-color: #2a2a2a !important;
+}
+.dark .btn-primary {
+  background-color: #2563eb !important;
+  border-color: #1e40af !important;
+}
+.dark .btn-outline-primary {
+  color: #cfe2ff !important;
+  border-color: #2a2a2a !important;
+}
+.dark .text-muted {
+  color: #bdbdbd !important;
+}
+.dark a {
+  color: #93c5fd !important;
+}
+.dark .small {
+  color: #cfcfcf !important;
+}
+.dark .list-group-item + .list-group-item {
+  border-top: 1px solid #2a2a2a !important;
+}
