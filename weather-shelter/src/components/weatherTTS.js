@@ -11,7 +11,7 @@ export default function WeatherTTS() {
   const getWeather = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/weather');
+      const res = await fetch('https://accessible-weather-shelter.onrender.com/api/weather');
       const data = await res.json();
       setWeather(data.current);
       setForecast(data.forecast);

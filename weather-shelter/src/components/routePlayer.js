@@ -25,7 +25,7 @@ console.log(routeId)
       try {
         if (routeId) {
           try {
-            const resp = await axios.get(`http://localhost:5000/api/routes/${routeId}/steps`, { timeout: 10000 });
+            const resp = await axios.get(`https://accessible-weather-shelter.onrender.com/api/routes/${routeId}/steps`, { timeout: 10000 });
             const data = resp.data || {};
             if (data.steps && data.steps.length > 0) {
               setSteps(data.steps);
