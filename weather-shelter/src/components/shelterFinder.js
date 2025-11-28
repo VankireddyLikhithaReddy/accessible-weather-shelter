@@ -79,7 +79,7 @@ export default function ShelterFinder() {
         }
 
         try {
-          const resp = await axios.get(`http://localhost:5000/api/shelters`, {
+          const resp = await axios.get(`https://accessible-weather-shelter.onrender.com/api/shelters`, {
             params: { lat: latitude, lon: longitude, radius: 5000 },
             timeout: 10000,
           });
@@ -429,7 +429,7 @@ export default function ShelterFinder() {
                               const destName = shelter.name || shelter.title || shelter.name_long || null;
                               if (destName) {
                                 try {
-                                  const respSearch = await axios.get('http://localhost:5000/api/routes/search', { params: { destName }, timeout: 6000 });
+                                  const respSearch = await axios.get('https://accessible-weather-shelter.onrender.com/api/routes/search', { params: { destName }, timeout: 6000 });
                                   const listSearch = (respSearch.data && respSearch.data.routes) || [];
                                   if (listSearch.length > 0 && listSearch[0].route && listSearch[0].route._id) {
                                     setSelectedRouteId(listSearch[0].route._id);
