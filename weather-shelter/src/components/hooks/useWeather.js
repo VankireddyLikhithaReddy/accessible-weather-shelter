@@ -8,7 +8,7 @@ export function useCurrentWeather(location) {
     queryKey: ["/api/weather/current", location],
     queryFn: async () => {
       const response = await fetch(
-        `http://localhost:5000/api/weather/current/${encodeURIComponent(location)}`
+        `https://accessible-weather-shelter.onrender.com/api/weather/current/${encodeURIComponent(location)}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch current weather");
@@ -25,7 +25,7 @@ export function useWeatherForecast(location, days = 3) {
     queryKey: ["/api/weather/forecast", location, days],
     queryFn: async () => {
       const response = await fetch(
-        `http://localhost:5000/api/weather/forecast/${encodeURIComponent(location)}?days=${days}`
+        `https://accessible-weather-shelter.onrender.com/api/weather/forecast/${encodeURIComponent(location)}?days=${days}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch forecast");
@@ -45,7 +45,7 @@ export function useWeatherAlerts(location) {
     queryKey: ["/api/weather/alerts", location],
     queryFn: async () => {
       const response = await fetch(
-        `http://localhost:5000/api/weather/alerts/${encodeURIComponent(location)}`
+        `https://accessible-weather-shelter.onrender.com/api/weather/alerts/${encodeURIComponent(location)}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch alerts");

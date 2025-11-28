@@ -22,6 +22,35 @@ export default function Login() {
     } catch (e) {}
   }, []);
 
+  // Announce voice-login/register instructions when the login page mounts
+  const mountAnnouncedRef = React.useRef(false);
+  useEffect(() => {
+    if (mountAnnouncedRef.current) return;
+    mountAnnouncedRef.current = true;
+    const msg = "Welcome to Accessible Weather and Shelter Finder. To sign in using voice, say 'login' and you will be asked for your username and password. To create an account, say 'register'.";
+    try {
+      if (speak) speak(msg); else audioFeedback.speak(msg);
+    } catch (e) {
+      try { audioFeedback.speak(msg); } catch (err) {}
+    }
+  }, []);
+
+  const signupModeRef = React.useRef(false);
+  useEffect(() => {
+    // skip the first render
+    if (signupModeRef.current === signupMode) {
+      // no change
+      return;
+    }
+    signupModeRef.current = signupMode;
+    const msg = signupMode ? "Register mode opened. Say 'register' to create an account." : "Login mode opened. Say 'login' to sign in.";
+    try {
+      speak && speak(msg);
+    } catch (e) {
+      try { audioFeedback.speak(msg); } catch (err) {}
+    }
+  }, [signupMode, speak]);
+
   // Simple local-only auth: store users in localStorage under 'localUsers'
   const readUsers = () => {
     try { return JSON.parse(localStorage.getItem('localUsers') || '[]'); } catch (e) { return []; }
@@ -174,9 +203,14 @@ export default function Login() {
   }, []);
 
   return (
-    <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
+    <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
+      <div className="text-center mb-2">
+        <h1 className="fw-bold display-5">Accessible Weather & Shelter</h1>
+      </div>
+
       <div className="card p-4" style={{ maxWidth: 420, width: '100%' }}>
         <h2 className="mb-4">{signupMode ? 'Sign Up' : 'Login'}</h2>
+        <p className="text-muted">Voice: say "login" to start voice login (you will be asked for username and password). Say "register" to create an account.</p>
         <form onSubmit={signupMode ? doRegister : doLogin}>
           <div className="mb-3">
             <label className="form-label">Username</label>
