@@ -1,7 +1,7 @@
 // backend/sosRoute.js
 import { sendSOSNotification } from "./services/sosService.js";
 
-export function registerSosRoutes(app) {
+export async function registerSosRoutes(app) {
   app.post("/api/sos/send", async (req, res) => {
     try {
       const { lat, lon } = req.body;
