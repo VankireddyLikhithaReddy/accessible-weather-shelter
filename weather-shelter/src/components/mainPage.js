@@ -25,6 +25,7 @@ export default function MainPage() {
     textParts.push('Available voice commands include: Navigation. Say "Go to weather" or "Open weather" to open the Weather page. Say "Go to shelter" or "Open shelter" to open the Shelter Finder. Say "Go home" or "Home" to return to the main page.');
     textParts.push('Shelter Finder commands: Say "Search shelter" to find nearby shelters. Say "Read" or "Repeat" to read the nearest shelter. Say "Stop reading" or "Stop" to stop speech.');
     textParts.push('Font size commands: Say "Increase font" or "Make text bigger"; say "Decrease font" or "Make text smaller".');
+    textParts.push('Emergency SOS: Say "Help me", "Send SOS", or "Call 911" to send your location and trigger the emergency workflow.');
     textParts.push('Weather commands: Say "Search for [location]" to find weather for a location. Say "Open accessibility settings" or "Open settings". Say "Announce details" to read current weather details.');
 
     try {
@@ -136,6 +137,7 @@ export default function MainPage() {
               <li><strong>"Go to weather"</strong> / <strong>"Open weather"</strong></li>
               <li><strong>"Go to shelter"</strong> / <strong>"Open shelter"</strong></li>
               <li><strong>"Go home"</strong> / <strong>"Home"</strong></li>
+              <li><strong>"Log out"</strong> / <strong>"Sign out"</strong> — Sign out of the app</li>
              
             </ul>
           </div>
@@ -148,6 +150,15 @@ export default function MainPage() {
               <li><strong>"Search shelter"</strong> — Find nearby shelters</li>
               <li><strong>"Read"</strong> / <strong>"Repeat"</strong> — Read nearest shelter</li>
               <li><strong>"Stop reading"</strong> / <strong>"Stop"</strong> — Stop speech</li>
+            </ul>
+          </div>
+
+          <div className="col-md-6 mb-4">
+            <h6 className="fw-bold text-danger">Emergency SOS</h6>
+            <ul className="list-unstyled small">
+              <li><strong>"Help me"</strong> / <strong>"Send SOS"</strong> — Send your location and notify emergency contacts.</li>
+              <li><strong>"Call 911"</strong> — Attempts to call emergency services after sending SOS.</li>
+              {/* <li><strong>Keyboard:</strong> <kbd>Ctrl/Cmd + Shift + S</kbd> — Trigger SOS (keyboard shortcut).</li> */}
             </ul>
           </div>
 

@@ -14,6 +14,15 @@ export default function LogoutButton() {
     setLocation('/login');
   };
 
+  // Also listen for voice-triggered logout events
+  React.useEffect(() => {
+    const onVoiceLogout = () => {
+      handleLogout();
+    };
+    window.addEventListener('voice-logout', onVoiceLogout);
+    return () => window.removeEventListener('voice-logout', onVoiceLogout);
+  }, []);
+
   return (
     <button type="button" className="btn btn-outline-danger ms-2" onClick={handleLogout} aria-label="Logout">
       Logout
