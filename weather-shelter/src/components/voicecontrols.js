@@ -143,9 +143,10 @@ export default function VoiceControl() {
     // 🚨 NEW CODE — EMERGENCY SOS VOICE COMMAND
     if (detectSOSCommand(text)) {
       console.log("🚨 Emergency SOS triggered by voice command");
-      // Temporary now — full workflow added in Task #94
-      // 🚨 Use centralized SOS workflow
-      triggerSOS(addToast);
+      // Dispatch an event so other parts of the app can react if desired
+      try { window.dispatchEvent(new CustomEvent('voice-open-sos')); } catch (e) {}
+      // Use centralized SOS workflow (shows overlay, sends location, etc.)
+      try { triggerSOS(addToast); } catch (e) { console.error('triggerSOS failed', e); }
       return;
     }
     // Voice-driven login/register flows
@@ -279,6 +280,15 @@ console.log("Voice command text:", text);
       return;
     }
 
+    // Logout / sign out
+    if (text.includes('logout') || text.includes('log out') || text.includes('sign out') || text.includes('sign me out')) {
+      try { window.dispatchEvent(new CustomEvent('voice-logout')); } catch (e) {}
+      addToast({ title: 'Voice', body: 'Logging out' });
+      audioFeedback.playChime();
+      audioFeedback.speak('Logging out');
+      return;
+    }
+
     // Accessibility settings (modal on weather page)
     if (text.includes('accessibility') || text.includes('accessibility settings') || text.includes('open accessibility') || text.includes('open accessibility settings') || text.includes('open settings')) {
       try { setLocation('/weather'); } catch (e) {}
@@ -343,6 +353,25 @@ console.log("Voice command text:", text);
       addToast({ title: 'Voice', body: 'Getting directions to nearest shelter' });
       audioFeedback.playChime();
       audioFeedback.speak('Getting directions to the nearest shelter');
+      return;
+    }
+
+    // Open Google Maps to the nearest (or specified) shelter
+    if (text.includes('open maps') || text.includes('open map') || text.includes('open in maps') || text.includes('open google maps')) {
+      // Optional: allow user to say "open maps to shelter two" — extract an index if present
+      let idx = 0;
+      const idxMatch = text.match(/shelter (one|two|three|four|five|\d+)/i);
+      if (idxMatch && idxMatch[1]) {
+        const word = idxMatch[1].toLowerCase();
+        const mapWords = { one: 1, two: 2, three: 3, four: 4, five: 5 };
+        idx = mapWords[word] || Number(word) || 0;
+        // convert to zero-based
+        if (!Number.isNaN(idx)) idx = Math.max(0, idx - 1);
+      }
+      try { window.dispatchEvent(new CustomEvent('voice-open-maps', { detail: { index: idx } })); } catch (e) {}
+      addToast({ title: 'Voice', body: 'Opening Maps to nearest shelter' });
+      audioFeedback.playChime();
+      audioFeedback.speak('Opening maps to the nearest shelter');
       return;
     }
 
