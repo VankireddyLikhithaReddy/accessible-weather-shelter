@@ -64,7 +64,7 @@ export default function ShelterFinderPlaces() {
     if (mountAnnouncedRef.current) return;
     mountAnnouncedRef.current = true;
     const pageMsg = 'Navigated to shelters page.';
-    const voiceCmds = 'Available voice commands: Find shelters; Severe weather; Read nearest; Read all; Get directions to shelter followed by a number; Next step; Previous step; Stop navigation.';
+    const voiceCmds = 'Available voice commands: Find shelters; Read nearest; Read all; Open maps ; Directions to shelter; Next step; Previous step; Stop navigation.';
     const combined = `${pageMsg} ${voiceCmds}`;
     setAnnouncement(combined);
     try {
