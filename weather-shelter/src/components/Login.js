@@ -68,7 +68,7 @@ export default function Login() {
       try {
         if (!regUsername || !regPassword) throw new Error('Username and password are required');
         // try backend signup first
-        const res = await fetch('/api/users', {
+        const res = await fetch('https://accessible-weather-shelter.onrender.com/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: regUsername, password: regPassword, emergencyEmail: regEmergency }),
