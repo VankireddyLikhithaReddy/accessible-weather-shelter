@@ -27,7 +27,7 @@ export default function Login() {
   useEffect(() => {
     if (mountAnnouncedRef.current) return;
     mountAnnouncedRef.current = true;
-    const msg = "Welcome to Accessible Weather and Shelter Finder. To sign in using voice, say 'login' and you will be asked for your username and password. To create an account, say 'register'.";
+   const msg = signupMode ? "Register mode opened. Say 'register' to create an account. You will be asked for username and password" : "Login mode opened. Say 'login' to sign in. You will be asked for username and password";
     try {
       if (speak) speak(msg); else audioFeedback.speak(msg);
     } catch (e) {
