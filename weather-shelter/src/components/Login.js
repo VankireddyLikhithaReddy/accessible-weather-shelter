@@ -121,7 +121,7 @@ export default function Login() {
       try {
         console.log('doLogin sending', { username: loginUsername, password: loginPassword });
         // try backend login first
-        const res = await fetch('/api/users/login', {
+        const res = await fetch('https://accessible-weather-shelter.onrender.com/api/users/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: loginUsername, password: loginPassword }),
