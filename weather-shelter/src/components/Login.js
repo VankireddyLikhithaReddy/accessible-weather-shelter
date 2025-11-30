@@ -43,7 +43,7 @@ export default function Login() {
       return;
     }
     signupModeRef.current = signupMode;
-    const msg = signupMode ? "Register mode opened. Say 'register' to create an account." : "Login mode opened. Say 'login' to sign in.";
+    const msg = signupMode ? "Register mode opened. Say 'register' to create an account. You will be asked for username and password" : "Login mode opened. Say 'login' to sign in. You will be asked for username and password";
     try {
       speak && speak(msg);
     } catch (e) {
