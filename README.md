@@ -73,8 +73,8 @@ This application ensures that visually impaired users can **independently** acce
 - Modular service and route-level architecture  
 
 ### DevOps & Deployment
-- Backend Dockerfile  
-- Docker Compose (Backend + MongoDB + optional Mongo Express)  
+- Backend Renderfile  
+- Render Compose (Backend + MongoDB + optional Mongo Express)  
 - Environment variable configuration  
 - Clean CI/CD-ready project structure  
 
@@ -95,8 +95,8 @@ This application ensures that visually impaired users can **independently** acce
 - Geo-based shelter lookup  
 
 ### **Deployment**
-- Docker  
-- Docker Compose  
+- Render  
+- Render Compose  
 - Environment Variables  
 
 
@@ -125,7 +125,7 @@ npm start
 
 ```
 **Team Memers**
-- Likitha
+- Likhitha
 - Sravya
 - Abhilash Reddy
 - Jaya Suriya
