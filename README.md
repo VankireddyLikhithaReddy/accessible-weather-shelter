@@ -73,9 +73,11 @@ This application ensures that visually impaired users can **independently** acce
 - Modular service and route-level architecture  
 
 ### DevOps & Deployment
-- Backend Renderfile  
-- Render Compose (Backend + MongoDB + optional Mongo Express)  
-- Environment variable configuration  
+- The application is fully deployed on the Render platform.
+- Render Web Services for the Node.js backend  
+- Render Static Hosting for the React frontend
+- Validated backend services by running test cases as part of the deployment pipeline on Render
+- Environment variables securely managed through Render’s dashboard
 - Clean CI/CD-ready project structure  
 
 
@@ -95,8 +97,8 @@ This application ensures that visually impaired users can **independently** acce
 - Geo-based shelter lookup  
 
 ### **Deployment**
-- Render  
-- Render Compose  
+- Render Web Services 
+- Render Static Hosting  
 - Environment Variables  
 
 
